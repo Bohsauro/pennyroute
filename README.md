@@ -35,14 +35,15 @@ PennyRoute measures, ranks, and switches — automatically.
 
   The engine walks the chain top → bottom and uses the first *healthy* step.
 - **Auto-routing** — a background engine re-evaluates the primary chain every N minutes. If the best healthy choice changes, PennyRoute rewrites its config and restarts the gateway. Zero tokens burned (no benchmark calls — pricing comes from OpenRouter's live endpoint stats).
-- **WebUI** — overview, live ranking, chain editor, model search across the full OpenRouter catalog, settings, event log.
+- **It *is* the API** — an OpenAI-compatible endpoint (`/v1/chat/completions`, `/v1/models`) with its own API keys. Point the `openai` SDK, LangChain, Aider, or anything at PennyRoute: every request is routed through your fallback chain and served by the cheapest healthy provider at that moment. Streaming included.
+- **WebUI** — overview, live ranking, chain editor, key management, model search across the full OpenRouter catalog, settings, event log.
 - **Hermes Agent native** — writes `model.default` + `provider_routing.order` (as a *real YAML list* — the well-known silent-pin pitfall) into `~/.hermes/config.yaml`.
 
 ## Screenshots
 
-| Overview | Ranking |
-|---|---|
-| ![Overview](assets/screenshot-overview.png) | ![Ranking](assets/screenshot-ranking.png) |
+| Overview | Ranking | API endpoint |
+|---|---|---|
+| ![Overview](assets/screenshot-overview.png) | ![Ranking](assets/screenshot-ranking.png) | ![API](assets/screenshot-api.png) |
 
 ## Quickstart
 
@@ -60,6 +61,39 @@ uvicorn pennyroute.app:app --host 0.0.0.0 --port 8490
 Open `http://localhost:8490`. Done.
 
 > Binding to `0.0.0.0` makes it reachable from your LAN / Tailscale — handy if PennyRoute runs on a headless box.
+
+## Use it as your AI endpoint
+
+Create a key in the WebUI (**API endpoint** page → *Create key*), then point any OpenAI-compatible client at PennyRoute:
+
+```bash
+curl http://YOUR-IP:8490/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: pnk-YOUR-KEY" \
+  -d '{
+    "model": "penny",
+    "messages": [{"role": "user", "content": "hello"}],
+    "stream": true
+  }'
+```
+
+```python
+from openai import OpenAI
+
+client = OpenAI(base_url="http://YOUR-IP:8490/v1", api_key="pnk-YOUR-KEY")
+r = client.chat.completions.create(model="penny", messages=[{"role": "user", "content": "hello"}])
+print(r.model)  # the model that actually served the request
+```
+
+**Model field routing:**
+
+| `model` value | Behaviour |
+|---|---|
+| `"penny"` | the **primary** fallback chain resolves it (cheapest healthy at that moment) |
+| `"penny:<chain-name>"` | a specific named chain |
+| any model id (e.g. `"z-ai/glm-5.3-flash"`) | that model, routed to its cheapest healthy provider |
+
+Failover is per-request: if a provider errors mid-chain, PennyRoute silently retries the next candidate — the client never sees the switch. Responses carry a `pennyroute.served_by` field telling you exactly who served it.
 
 ## How routing works
 
@@ -119,6 +153,7 @@ All state lives in `data/` — plain JSON, no database:
 | `data/models.json` | your watchlist (add/remove in the UI, from the full OpenRouter catalog) |
 | `data/chains.json` | fallback chains |
 | `data/settings.json` | cost mix, health gates, engine interval, gateway-restart behaviour |
+| `data/keys.json` | API keys for the `/v1` endpoint (hashed, shown once) |
 | `data/events.jsonl` | append-only log of every switch and engine decision |
 
 Key settings (also editable in the UI):
@@ -140,14 +175,16 @@ Measure *your* mix once (export your OpenRouter activity CSV and count tokens by
 ```
 pennyroute/
 ├── pennyroute/
-│   ├── app.py        # FastAPI routes + static serving
-│   ├── engine.py     # fallback-chain router (background thread)
-│   ├── ranking.py    # blended-cost ranking + chain resolution
-│   ├── orclient.py   # OpenRouter client with caching
-│   └── store.py      # JSON state persistence
-├── static/           # zero-build WebUI (HTML/CSS/JS)
-├── assets/           # banner + screenshots
-└── data/             # your state (created on first run)
+│   ├── app.py          # FastAPI routes + static serving
+│   ├── router_proxy.py # OpenAI-compatible /v1 proxy with per-request failover
+│   ├── keys.py         # API key management (hashed)
+│   ├── engine.py       # fallback-chain router (background thread)
+│   ├── ranking.py      # blended-cost ranking + chain resolution
+│   ├── orclient.py     # OpenRouter client with caching
+│   └── store.py        # JSON state persistence
+├── static/             # zero-build WebUI (HTML/CSS/JS)
+├── assets/             # banner + screenshots
+└── data/               # your state (created on first run, gitignored)
 ```
 
 ## Roadmap

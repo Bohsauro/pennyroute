@@ -5,19 +5,21 @@ Run:  uvicorn pennyroute.app:app --host 0.0.0.0 --port 8490
 
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 from pydantic import BaseModel
 
 from . import engine
+from . import keys
 from . import orclient
 from . import ranking
+from . import router_proxy
 from . import store
 
 STATIC_DIR = Path(__file__).resolve().parent.parent / "static"
 
-app = FastAPI(title="PennyRoute", version="1.0.0")
+app = FastAPI(title="PennyRoute", version="1.1.0")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -29,6 +31,44 @@ app.add_middleware(
 @app.on_event("startup")
 def _startup():
     engine.start()
+
+
+def _require_key(request: Request):
+    raw = request.headers.get("x-api-key") or request.headers.get("authorization")
+    if not keys.verify_key(raw):
+        raise HTTPException(401, "invalid or missing API key")
+
+
+# ------------------------------------------------------------- /v1 (router) --
+
+@app.post("/v1/chat/completions")
+async def v1_chat(request: Request):
+    _require_key(request)
+    body = await request.json()
+    if not isinstance(body, dict):
+        raise HTTPException(400, "JSON body required")
+    return await router_proxy.proxy_chat(request, body)
+
+
+@app.get("/v1/models")
+def v1_models(request: Request):
+    _require_key(request)
+    # what the primary chain would serve right now
+    settings = store.load_settings()
+    ranked = ranking.rank_models(store.load_models(), settings["mix"],
+                                 {"min_tps": settings["min_tps"],
+                                  "min_uptime": settings["min_uptime"]})
+    chains = store.load_chains()
+    primary = next((c for c in chains if c.get("primary")), None)
+    res = ranking.resolve_chain(primary, ranked, settings["mix"],
+                                {"min_tps": settings["min_tps"],
+                                 "min_uptime": settings["min_uptime"]}) if primary else None
+    served = res["model"] if res else None
+    data = [{"id": m["slug"], "object": "model",
+             "owned_by": "pennyroute"} for m in store.load_models()]
+    if served:
+        data.insert(0, {"id": served, "object": "model", "owned_by": "pennyroute-primary"})
+    return {"object": "list", "data": data}
 
 
 # ---------------------------------------------------------------- state ----
@@ -224,6 +264,47 @@ def api_set_settings(s: SettingsIn):
 @app.get("/api/events")
 def api_events(limit: int = 60):
     return {"events": store.load_events(limit)}
+
+
+# ----------------------------------------------------------------- keys ---
+
+class KeyIn(BaseModel):
+    name: str = "default"
+
+
+@app.get("/api/keys")
+def api_keys():
+    return {"keys": keys.list_keys()}
+
+
+@app.post("/api/keys")
+def api_create_key(k: KeyIn):
+    res = keys.create_key(k.name)
+    if not res:
+        raise HTTPException(500, "could not create key")
+    return res
+
+
+@app.delete("/api/keys/{key_id}")
+def api_revoke_key(key_id: str):
+    if not keys.revoke_key(key_id):
+        raise HTTPException(404, "key not found")
+    return {"ok": True}
+
+
+@app.get("/api/resolve")
+def api_resolve():
+    """What the primary chain would serve right now (for the API page)."""
+    settings = store.load_settings()
+    ranked = ranking.rank_models(store.load_models(), settings["mix"],
+                                 {"min_tps": settings["min_tps"],
+                                  "min_uptime": settings["min_uptime"]})
+    chains = store.load_chains()
+    primary = next((c for c in chains if c.get("primary")), None)
+    res = ranking.resolve_chain(primary, ranked, settings["mix"],
+                                {"min_tps": settings["min_tps"],
+                                 "min_uptime": settings["min_uptime"]}) if primary else None
+    return {"resolution": res, "key_count": len(keys.list_keys())}
 
 
 # ---------------------------------------------------------------- static --

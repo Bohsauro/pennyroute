@@ -40,6 +40,7 @@ const ICONS = {
   overview: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 13h8V3H3zM13 21h8V11h-8zM13 7h8V3h-8zM3 21h8v-4H3z"/></svg>',
   ranking: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>',
   chains: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/></svg>',
+  api: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 17l6-6-6-6M12 19h8"/></svg>',
   models: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M4 12h16M12 4v16"/></svg>',
   settings: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h0a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h0a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v0a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>',
   events: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l2.5 2.5"/></svg>',
@@ -49,6 +50,7 @@ const NAV = [
   ["overview", "Overview", ICONS.overview],
   ["ranking", "Ranking", ICONS.ranking],
   ["chains", "Fallback chains", ICONS.chains],
+  ["api", "API endpoint", ICONS.api],
   ["models", "Watchlist", ICONS.models],
   ["settings", "Settings", ICONS.settings],
   ["events", "Events", ICONS.events],
@@ -341,6 +343,99 @@ async function chainAction(d) {
   }
 }
 
+/* -------------------------------------------------------------- API page */
+
+async function viewApi() {
+  $("#view").innerHTML = `
+    <div class="page-head"><div><h1>API endpoint</h1>
+      <div class="sub">OpenAI-compatible. Point any client (openai SDK, LangChain, curl) at PennyRoute and it routes through your chains.</div></div></div>
+    <div class="card"><h2>Base URL</h2>
+      <div class="row-ctl">
+        <div><label class="field">On this machine</label><input readonly value="http://localhost:8490/v1" id="url-local"></div>
+        <div><label class="field">From LAN / Tailscale</label><input readonly value="http://YOUR-IP:8490/v1" id="url-lan"></div>
+        <div style="max-width:120px;align-self:end"><button id="btn-copy-url">Copy LAN</button></div>
+      </div>
+      <div class="hint" style="margin-top:8px">Reachable on all interfaces (0.0.0.0). From another device use the Tailscale IP or LAN IP of this machine — same port.</div>
+    </div>
+    <div class="card"><h2>Routing now</h2><div id="resolve-box"><span class="spinner"></span></div></div>
+    <div class="card"><h2>API keys</h2>
+      <div class="row-ctl" style="max-width:520px">
+        <div><label class="field">Key name</label><input id="key-name" placeholder="e.g. my-laptop"></div>
+        <div style="max-width:130px;align-self:end"><button class="primary" id="btn-newkey">Create key</button></div>
+      </div>
+      <div id="newkey-box" style="display:none;margin-top:12px">
+        <div class="hint" style="margin-bottom:6px">Copy it now — it will not be shown again.</div>
+        <div class="row-ctl"><div><input readonly id="newkey-val" class="mono"></div>
+        <div style="max-width:120px;align-self:end"><button id="btn-copy-key">Copy</button></div></div>
+      </div>
+      <div id="keys-list" style="margin-top:14px"></div>
+    </div>
+    <div class="card"><h2>Usage</h2>
+      <div class="hint" style="margin-bottom:8px">model field: <span class="mono">"penny"</span> = primary chain · <span class="mono">"penny:free-first"</span> = a named chain · any real model id = that model, routed to its cheapest healthy provider.</div>
+      <label class="field">curl</label>
+      <pre class="mono" id="ex-curl" style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:12px;font-size:12px;overflow:auto"></pre>
+      <label class="field">Python (openai SDK)</label>
+      <pre class="mono" id="ex-py" style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:12px;font-size:12px;overflow:auto"></pre>
+    </div>`;
+
+  const host = location.host || "localhost:8490";
+  $("#url-local").value = "http://" + host + "/v1";
+  $("#url-lan").value = "http://" + host.split(":")[0] + ":8490/v1   (replace with Tailscale/LAN IP of this machine)";
+  $("#btn-copy-url").onclick = () => { navigator.clipboard.writeText("http://" + host.split(":")[0] + ":8490/v1"); toast("Base URL copied"); };
+
+  try {
+    const r = await api("/api/resolve");
+    const res = r.resolution;
+    $("#resolve-box").innerHTML = res
+      ? `<div class="pill ok"><span class="dot"></span> ${esc(res.model)} @ ${esc(res.provider)} — ${fmt(res.blended)} $/M blended</div>
+         <div class="hint" style="margin-top:6px">Reason: ${esc(res.reason)} · via chain "${esc(res.model && r.resolution ? '' : '')}"</div>`
+      : '<span class="badge warn">no healthy resolution</span>';
+  } catch (e) { $("#resolve-box").innerHTML = '<span class="badge bad">resolve failed</span>'; }
+
+  const loadKeys = async () => {
+    const d = await api("/api/keys");
+    $("#keys-list").innerHTML = d.keys.length ? `<table><thead><tr><th>Name</th><th>Key</th><th>Created</th><th>Last used</th><th></th></tr></thead><tbody>` +
+      d.keys.map(k => `<tr><td><b>${esc(k.name)}</b></td><td class="mono">${esc(k.prefix)}…</td><td class="mini">${esc(k.created)}</td><td class="mini">${esc(k.last_used || "never")}</td>
+        <td><button class="sm danger" data-id="${esc(k.id)}">revoke</button></td></tr>`).join("") + "</tbody></table>"
+      : '<div class="empty">No keys yet — create one.</div>';
+    $$("#keys-list button[data-id]").forEach(b => b.onclick = async () => {
+      await api("/api/keys/" + b.dataset.id, { method: "DELETE" });
+      toast("Key revoked");
+      loadKeys();
+    });
+  };
+  await loadKeys();
+
+  $("#btn-newkey").onclick = async () => {
+    try {
+      const r = await api("/api/keys", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: $("#key-name").value || "default" }) });
+      $("#newkey-box").style.display = "";
+      $("#newkey-val").value = r.key;
+      $("#btn-copy-key").onclick = () => { navigator.clipboard.writeText(r.key); toast("Key copied"); };
+      loadKeys();
+    } catch (e) { toast(e.message, true); }
+  };
+
+  const base = "http://" + host + "/v1";
+  $("#ex-curl").textContent = `curl ${base}/chat/completions \\
+  -H "Content-Type: application/json" \\
+  -H "X-API-Key: pnk-YOUR-KEY" \\
+  -d '{
+    "model": "penny",
+    "messages": [{"role": "user", "content": "hello"}],
+    "stream": false
+  }'`;
+  $("#ex-py").textContent = `from openai import OpenAI
+
+client = OpenAI(base_url="${base}", api_key="pnk-YOUR-KEY")
+
+r = client.chat.completions.create(
+    model="penny",   # primary chain; or "penny:free-first", or a model id
+    messages=[{"role": "user", "content": "hello"}],
+)
+print(r.model)  # resolved model id; response also carries .pennyroute.served_by`;
+}
+
 /* ---------------------------------------------------------------- models */
 
 function viewModels() {
@@ -440,7 +535,7 @@ function viewEvents() {
 
 /* ---------------------------------------------------------------- router */
 
-const VIEWS = { overview: viewOverview, ranking: viewRanking, chains: viewChains, models: viewModels, settings: viewSettings, events: viewEvents };
+const VIEWS = { overview: viewOverview, ranking: viewRanking, chains: viewChains, api: viewApi, models: viewModels, settings: viewSettings, events: viewEvents };
 
 function route() {
   const name = (location.hash.replace("#/", "") || "overview");
