@@ -225,11 +225,13 @@ async function loadOverview() {
       <div style="margin-top:12px" class="hint"><span style="font-family:var(--mono)">${esc(a.model || "—")}</span> @ <span style="font-family:var(--mono)">${esc((a.order && a.order[0]) || "—")}</span></div>
     </div>
     <div class="panel"><h2><span class="k">Blended cost</span> — 24h trend</h2>
-      <div style="position:relative;height:76px">
+      <div class="trend-box">
         ${svgSparkline(blendedSeries.length > 1 ? blendedSeries : [0, 0, 0, last || 0, last || 0], "var(--green)")}
-        <div style="position:absolute;left:0;bottom:0"><span class="badge ok">${last != null ? fmt(last) : "—"} $/M now</span></div>
+        <div class="trend-meta">
+          <span class="trend-now">${last != null ? fmt(last) : "—"} $/M now</span>
+          <span class="trend-samples">${tml.points.length} samples</span>
+        </div>
       </div>
-      <div class="hint" style="margin-top:4px">${tml.points.length} samples · engine snapshots</div>
     </div>
     <div class="panel"><h2><span class="k">Cost composition</span> — active endpoint</h2>
       ${b ? `<div class="donut-wrap">
@@ -243,11 +245,24 @@ async function loadOverview() {
       </div>` : '<div class="empty">no data</div>'}
     </div>
     <div class="panel"><h2><span class="k">Chain candidates</span> — cost ladder</h2>
-      <div class="share-list">${cands.slice(0, 5).map((c, i) => `<div class="share-row"><span class="dot" style="background:${PALETTE[i % PALETTE.length]}"></span><span class="nm">${esc(c.provider)}</span><span class="bar"><span style="width:${((c.blended || 0) / maxC * 100).toFixed(0)}%;background:${PALETTE[i % PALETTE.length]}"></span></span><span class="pc">${c.blended != null ? fmt(c.blended) : "—"}</span></div>`).join("") || '<div class="empty">no candidates</div>'}</div>
+      <div class="share-list">${cands.slice(0, 5).map((c, i) => `<div class="share-row">
+        <span class="dot" style="background:${PALETTE[i % PALETTE.length]};flex:none"></span>
+        <div class="growbar">
+          <span class="nm" title="${esc(c.model)}">${esc(c.provider)}</span>
+          <span class="bar"><span style="width:${((c.blended || 0) / maxC * 100).toFixed(0)}%;background:${PALETTE[i % PALETTE.length]}"></span></span>
+        </div>
+        <span class="pc">${c.blended != null ? fmt(c.blended) : "—"}</span>
+        <button class="sm ghost route" data-r="${esc(c.model)}" data-rp="${esc(c.provider)}">Route</button>
+      </div>`).join("") || '<div class="empty">no candidates</div>'}</div>
     </div>
     <div class="panel"><h2><span class="k">Recent events</span></h2>
       <div>${ev.events.length ? ev.events.slice(0, 5).map(e => `<div class="ev-row"><span class="ts">${esc(e.ts)}</span><span class="badge ${e.event === "switch" ? "ok" : e.event === "engine_error" ? "bad" : "neut"}">${esc(e.event)}</span></div>`).join("") : '<div class="empty">no events</div>'}</div>
     </div>`;
+
+  // ladder route buttons
+  $$("#ov-side button[data-r]").forEach(btn => btn.onclick = () => {
+    applyChoice(btn.dataset.r, btn.dataset.rp);
+  });
 
   // live refresher: ping every 5s (lightweight: just update pill + latency)
   clearInterval(_ovTimer);
