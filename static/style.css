@@ -48,7 +48,7 @@ body {
 .brand img { width: 30px; height: 30px; }
 .brand .name { font-weight: 700; font-size: 15.5px; letter-spacing: -0.2px; }
 .brand .name em { color: var(--accent); font-style: normal; }
-.brand .tag { font-size: 10.5px; color: var(--faint); margin-top: 1px; }
+.brand .tag { font-size: 12px; color: var(--faint); margin-top: 1px; }
 
 .nav-item {
   display: flex; align-items: center; gap: 10px;
@@ -62,7 +62,7 @@ body {
 .nav-item svg { width: 16px; height: 16px; opacity: 0.85; flex: none; }
 
 .sidebar .spacer { flex: 1; }
-.side-foot { font-size: 11px; color: var(--faint); padding: 10px 8px; line-height: 1.7; }
+.side-foot { font-size: 12px; color: var(--faint); padding: 10px 8px; line-height: 1.7; }
 .side-foot a { color: var(--faint); text-decoration: none; }
 .side-foot a:hover { color: var(--accent); }
 
@@ -87,9 +87,9 @@ body {
 @media (max-width: 980px) { .grid2, .grid3 { grid-template-columns: 1fr; } }
 
 .stat { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 18px; }
-.stat .label { color: var(--muted); font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.7px; font-weight: 600; }
+.stat .label { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: 0.7px; font-weight: 600; }
 .stat .value { font-size: 20px; font-weight: 700; margin-top: 6px; letter-spacing: -0.3px; font-family: var(--mono); }
-.stat .sub { color: var(--faint); font-size: 11.5px; margin-top: 4px; }
+.stat .sub { color: var(--faint); font-size: 12px; margin-top: 4px; }
 .stat .value .unit { font-size: 12px; color: var(--muted); font-weight: 500; }
 
 .pill {
@@ -97,13 +97,13 @@ body {
   background: var(--surface2); border: 1px solid var(--border2);
   border-radius: 999px; padding: 4px 12px; font-size: 12px; font-weight: 600;
 }
-.pill .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 6px var(--accent); }
-.pill.amber .dot { background: var(--amber); box-shadow: 0 0 6px var(--amber); }
-.pill.red .dot { background: var(--red); box-shadow: 0 0 6px var(--red); }
+.pill .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); }
+.pill.amber .dot { background: var(--amber); }
+.pill.red .dot { background: var(--red); }
 
 .badge {
   display: inline-block; border-radius: 6px; padding: 2px 8px;
-  font-size: 11px; font-weight: 600;
+  font-size: 12px; font-weight: 600;
 }
 .badge.ok   { background: var(--accent-dim); color: var(--accent); }
 .badge.warn { background: var(--amber-dim); color: var(--amber); }
@@ -112,15 +112,15 @@ body {
 
 table { border-collapse: collapse; width: 100%; font-size: 13px; }
 th, td { padding: 9px 12px; text-align: left; border-bottom: 1px solid var(--border); white-space: nowrap; }
-th { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.6px; font-weight: 600; }
+th { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: 0.6px; font-weight: 600; }
 tbody tr { cursor: default; }
 tbody tr:hover { background: var(--surface2); }
 tr.active-row { background: var(--accent-dim); }
 tr.active-row td:first-child { border-left: 2px solid var(--accent); }
 td.num, th.num { text-align: right; font-family: var(--mono); font-size: 12.5px; }
-td .mini { color: var(--faint); font-size: 11px; }
+td .mini { color: var(--faint); font-size: 12px; }
 .model-name { font-weight: 600; }
-.model-sub { color: var(--faint); font-size: 11px; margin-top: 1px; }
+.model-sub { color: var(--faint); font-size: 12px; margin-top: 1px; }
 
 button {
   background: var(--surface2); color: var(--text);
@@ -134,7 +134,7 @@ button.primary:hover { filter: brightness(1.1); }
 button.danger { color: var(--red); }
 button.danger:hover { background: var(--red-dim); border-color: rgba(248,113,113,0.4); }
 button.ghost { background: transparent; }
-button.sm { padding: 4px 9px; font-size: 11.5px; }
+button.sm { padding: 4px 9px; font-size: 12px; }
 button:disabled { opacity: 0.45; cursor: not-allowed; }
 
 input, select {
@@ -145,7 +145,7 @@ input, select {
 }
 input:focus, select:focus { border-color: var(--accent-line); }
 input[type="range"] { padding: 0; height: 22px; accent-color: var(--accent); }
-label.field { display: block; color: var(--muted); font-size: 11.5px; font-weight: 600; margin: 10px 0 4px; }
+label.field { display: block; color: var(--muted); font-size: 12px; font-weight: 600; margin: 10px 0 4px; }
 .row-ctl { display: flex; gap: 10px; align-items: end; flex-wrap: wrap; }
 .row-ctl > div { flex: 1; min-width: 90px; }
 .switch { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px; color: var(--muted); }
@@ -157,9 +157,9 @@ label.field { display: block; color: var(--muted); font-size: 11.5px; font-weigh
   background: var(--surface2); border: 1px solid var(--border2);
   border-radius: 10px; padding: 8px 12px; min-width: 120px;
 }
-.chain-node .t { font-size: 10px; text-transform: uppercase; letter-spacing: 0.6px; color: var(--faint); font-weight: 700; }
+.chain-node .t { font-size: 12px; text-transform: uppercase; letter-spacing: 0.6px; color: var(--faint); font-weight: 700; }
 .chain-node .m { font-family: var(--mono); font-size: 12px; margin-top: 2px; }
-.chain-node .p { font-size: 11px; color: var(--muted); margin-top: 2px; }
+.chain-node .p { font-size: 12px; color: var(--muted); margin-top: 2px; }
 .chain-node.active { border-color: var(--accent-line); background: var(--accent-dim); }
 .chain-node.active .t { color: var(--accent); }
 .chain-arrow { color: var(--faint); font-size: 16px; padding: 0 2px; }
@@ -170,7 +170,7 @@ label.field { display: block; color: var(--muted); font-size: 11.5px; font-weigh
 
 /* events */
 .ev-row { display: flex; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 13px; align-items: baseline; }
-.ev-row .ts { color: var(--faint); font-family: var(--mono); font-size: 11.5px; flex: none; }
+.ev-row .ts { color: var(--faint); font-family: var(--mono); font-size: 12px; flex: none; }
 .ev-row .body { flex: 1; }
 
 /* toasts */
@@ -197,7 +197,7 @@ label.field { display: block; color: var(--muted); font-size: 11.5px; font-weigh
 .ac-item { padding: 8px 12px; cursor: pointer; font-size: 12.5px; }
 .ac-item:hover { background: var(--surface); }
 .ac-item .n { font-family: var(--mono); }
-.ac-item .d { color: var(--faint); font-size: 11px; }
+.ac-item .d { color: var(--faint); font-size: 12px; }
 
 .mono { font-family: var(--mono); }
 .muted { color: var(--muted); }
