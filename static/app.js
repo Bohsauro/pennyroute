@@ -726,8 +726,11 @@ function viewModels() {
     <div class="page-head">
       <div><h1>Watchlist</h1><div class="sub">Models ranked by the engine. Add any OpenRouter model — the ranking covers its providers.</div></div>
     </div>
+    <div class="panel"><h2><span class="k">Presets</span> — one-click watchlists</h2>
+      <div id="preset-box" style="display:flex;gap:10px;flex-wrap:wrap"><span class="spinner"></span></div>
+    </div>
     <div class="panel"><h2>Add model</h2>
-      <div class="autocomplete" style="max-width:520px">
+      <div class="autocomplete" style="max-width:560px">
         <input id="model-search" placeholder="Type to search 468+ models (e.g. kimi, glm, deepseek)…">
         <div class="ac-list" id="model-ac"></div>
       </div></div>
@@ -741,6 +744,21 @@ function viewModels() {
     toast("Removed from watchlist");
     viewModels();
   });
+  (async () => {
+    try {
+      const d = await api("/api/presets");
+      $("#preset-box").innerHTML = d.presets.map(p =>
+        `<button class="sm" data-preset="${esc(p.name)}" title="${esc(p.description)}">${esc(p.label)} <span style="color:var(--faint)">· ${p.models.length}</span></button>`).join("");
+      $$("#preset-box button[data-preset]").forEach(b => b.onclick = async () => {
+        try {
+          const r = await api("/api/presets/" + encodeURIComponent(b.dataset.preset), { method: "POST" });
+          MODELS = r.models;
+          toast(`Preset "${b.dataset.preset}" applied (${r.models.length} models)`);
+          viewModels();
+        } catch (e) { toast(e.message, true); }
+      });
+    } catch (e) { $("#preset-box").innerHTML = '<span class="empty">presets unavailable</span>'; }
+  })();
   const input = $("#model-search"), list = $("#model-ac");
   let deb;
   input.oninput = () => {

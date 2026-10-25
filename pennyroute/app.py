@@ -19,7 +19,7 @@ from . import store
 
 STATIC_DIR = Path(__file__).resolve().parent.parent / "static"
 
-app = FastAPI(title="PennyRoute", version="1.1.0")
+app = FastAPI(title="PennyRoute", version="1.6.0")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -123,6 +123,22 @@ class ModelIn(BaseModel):
 @app.get("/api/models")
 def api_models():
     return {"models": store.load_models()}
+
+
+@app.get("/api/presets")
+def api_presets():
+    return {"presets": store.list_presets()}
+
+
+@app.post("/api/presets/{name}")
+def api_apply_preset(name: str):
+    """Replace the watchlist with a preset. Returns the new watchlist."""
+    models = store.preset_models(name)
+    if models is None:
+        raise HTTPException(404, "preset not found")
+    store.save_models(models)
+    store.log_event("preset", {"preset": name, "count": len(models)})
+    return {"ok": True, "preset": name, "models": store.load_models()}
 
 
 @app.post("/api/models")

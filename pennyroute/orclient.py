@@ -26,6 +26,15 @@ def get_key() -> str:
     key = os.environ.get("OPENROUTER_API_KEY")
     if key:
         return key.strip()
+    # project-local .env (gitignored) — installer writes the key here
+    try:
+        for line in (Path.cwd() / ".env").read_text().splitlines():
+            if line.startswith("OPENROUTER_API_KEY="):
+                v = line.split("=", 1)[1].strip()
+                if v:
+                    return v
+    except (FileNotFoundError, OSError):
+        pass
     prefix = "OPENROUTER_API_" + "KEY="
     try:
         for line in ENV_FILE.read_text().splitlines():
