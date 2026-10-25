@@ -41,6 +41,7 @@ const ICONS = {
   ranking: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>',
   chains: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/></svg>',
   api: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 17l6-6-6-6M12 19h8"/></svg>',
+  chat: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>',
   models: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M4 12h16M12 4v16"/></svg>',
   settings: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h0a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h0a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v0a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>',
   events: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l2.5 2.5"/></svg>',
@@ -51,6 +52,7 @@ const NAV = [
   ["ranking", "Ranking", ICONS.ranking],
   ["chains", "Fallback chains", ICONS.chains],
   ["api", "API endpoint", ICONS.api],
+  ["chat", "Chat", ICONS.chat],
   ["models", "Watchlist", ICONS.models],
   ["settings", "Settings", ICONS.settings],
   ["events", "Events", ICONS.events],
@@ -436,6 +438,110 @@ r = client.chat.completions.create(
 print(r.model)  # resolved model id; response also carries .pennyroute.served_by`;
 }
 
+/* ------------------------------------------------------------------ chat */
+
+function viewChat() {
+  const savedKey = localStorage.getItem("penny_key") || "";
+  $("#view").innerHTML = `
+    <div class="page-head"><div><h1>Chat</h1>
+      <div class="sub">Talk to the router from any device on Tailscale / LAN. Key stays in this browser (localStorage), never on the server.</div></div></div>
+    <div class="card" style="padding:14px 18px">
+      <div class="row-ctl">
+        <div><label class="field">PennyRoute API key</label>
+          <input type="password" id="chat-key" placeholder="pnk-…" value="${esc(savedKey)}" class="mono"></div>
+        <div style="max-width:260px"><label class="field">Route</label>
+          <select id="chat-model">
+            <option value="penny">penny — primary chain</option>
+            ${CHAINS.filter(c => !c.primary).map(c => `<option value="penny:${esc(c.name)}">penny:${esc(c.name)}</option>`).join("")}
+            <option value="__ids__">— specific model —</option>
+          </select></div>
+        <div style="max-width:300px" id="chat-model-wrap" style="display:none"><label class="field">Model</label>
+          <select id="chat-model-id"></select></div>
+      </div>
+      <div class="hint" style="margin-top:6px">Create keys in <a href="#/api" style="color:var(--accent)">API endpoint</a>.</div>
+    </div>
+    <div class="card" style="padding:0">
+      <div id="chat-log" style="padding:16px 18px;min-height:280px;max-height:60vh;overflow:auto"></div>
+      <div style="border-top:1px solid var(--border);padding:12px 16px;display:flex;gap:10px">
+        <input id="chat-input" placeholder="Scrivi un messaggio… (Enter per inviare)" autocomplete="off">
+        <button class="primary" id="chat-send" style="flex:none">Send</button>
+      </div>
+    </div>
+    <div class="card" id="chat-meta" style="display:none"></div>`;
+
+  const log = $("#chat-log");
+  const input = $("#chat-input");
+  const modelSel = $("#chat-model"), modelIdSel = $("#chat-model-id"), wrap = $("#chat-model-wrap");
+  let history = [];
+
+  modelSel.onchange = async () => {
+    if (modelSel.value === "__ids__") {
+      wrap.style.display = "";
+      modelIdSel.innerHTML = '<option>loading…</option>';
+      try {
+        const key = $("#chat-key").value.trim();
+        const d = await fetch("/v1/models", { headers: { "X-API-Key": key } }).then(r => r.json());
+        modelIdSel.innerHTML = (d.data || []).map(m => `<option value="${esc(m.id)}">${esc(m.id)}${m.owned_by === "pennyroute-primary" ? " ★primary" : ""}</option>`).join("");
+      } catch (e) { modelIdSel.innerHTML = '<option value="penny">penny</option>'; }
+    } else wrap.style.display = "none";
+  };
+
+  const bubble = (role, text, meta) => {
+    const el = document.createElement("div");
+    el.style.cssText = "margin:10px 0;display:flex;" + (role === "user" ? "justify-content:flex-end" : "justify-content:flex-start");
+    const b = document.createElement("div");
+    b.style.cssText = `max-width:78%;border-radius:12px;padding:10px 14px;font-size:13.5px;white-space:pre-wrap;
+      background:${role === "user" ? "var(--accent-dim)" : "var(--surface2)"};border:1px solid var(--border2)`;
+    b.textContent = text;
+    el.appendChild(b);
+    if (meta) {
+      const m = document.createElement("div");
+      m.style.cssText = "font-size:10.5px;color:var(--faint);margin-top:4px;font-family:var(--mono)";
+      m.textContent = meta;
+      el.appendChild(m);
+    }
+    log.appendChild(el);
+    log.scrollTop = log.scrollHeight;
+    return b;
+  };
+
+  const send = async () => {
+    const key = $("#chat-key").value.trim();
+    if (!key) { toast("Insert your API key first", true); return; }
+    localStorage.setItem("penny_key", key);
+    const text = input.value.trim();
+    if (!text) return;
+    const model = modelSel.value === "__ids__" ? modelIdSel.value : modelSel.value;
+    input.value = "";
+    bubble("user", text);
+    history.push({ role: "user", content: text });
+    const btn = $("#chat-send"); btn.disabled = true;
+    const thinking = bubble("assistant", "…");
+    try {
+      const r = await fetch("/v1/chat/completions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-API-Key": key },
+        body: JSON.stringify({ model, messages: history, max_tokens: 2048 }),
+      });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.detail || r.status);
+      const content = d.choices?.[0]?.message?.content || "(empty)";
+      thinking.textContent = content;
+      history.push({ role: "assistant", content });
+      const sb = d.pennyroute?.served_by;
+      $("#chat-meta").style.display = "";
+      $("#chat-meta").innerHTML = `<span class="pill ok"><span class="dot"></span> served by ${esc(sb || d.model || "?")}</span>`;
+    } catch (e) {
+      thinking.textContent = "Error: " + e.message;
+      thinking.style.color = "var(--red)";
+    }
+    btn.disabled = false;
+    input.focus();
+  };
+  $("#chat-send").onclick = send;
+  input.onkeydown = ev => { if (ev.key === "Enter" && !ev.shiftKey) { ev.preventDefault(); send(); } };
+}
+
 /* ---------------------------------------------------------------- models */
 
 function viewModels() {
@@ -535,7 +641,7 @@ function viewEvents() {
 
 /* ---------------------------------------------------------------- router */
 
-const VIEWS = { overview: viewOverview, ranking: viewRanking, chains: viewChains, api: viewApi, models: viewModels, settings: viewSettings, events: viewEvents };
+const VIEWS = { overview: viewOverview, ranking: viewRanking, chains: viewChains, api: viewApi, chat: viewChat, models: viewModels, settings: viewSettings, events: viewEvents };
 
 function route() {
   const name = (location.hash.replace("#/", "") || "overview");
