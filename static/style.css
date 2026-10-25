@@ -2,28 +2,28 @@
    Dark, calm, data-first. Accent: emerald (savings). */
 
 :root {
-  --bg: #0b0e14;
-  --bg2: #0f1320;
-  --surface: #131826;
-  --surface2: #182032;
-  --border: #1f2937;
-  --border2: #2a3548;
-  --text: #e8ecf3;
-  --muted: #8b95a8;
-  --faint: #5c6579;
-  --accent: #34d399;
-  --accent-dim: rgba(52, 211, 153, 0.14);
-  --accent-line: rgba(52, 211, 153, 0.35);
+  --bg: #0f0f0f;
+  --bg2: #131313;
+  --surface: #171717;
+  --surface2: #1e1e1e;
+  --border: #242424;
+  --border2: #2e2e2e;
+  --text: #fafafa;
+  --muted: #b4b4b4;
+  --faint: #898989;
+  --accent: #3ecf8e;
+  --accent-dim: rgba(62, 207, 142, 0.12);
+  --accent-line: rgba(62, 207, 142, 0.35);
   --amber: #fbbf24;
   --amber-dim: rgba(251, 191, 36, 0.14);
   --red: #f87171;
   --red-dim: rgba(248, 113, 113, 0.14);
   --blue: #60a5fa;
   --blue-dim: rgba(96, 165, 250, 0.14);
-  --radius: 12px;
+  --radius: 16px;
   --radius-sm: 8px;
   --mono: ui-monospace, "SF Mono", "Cascadia Code", Menlo, Consolas, monospace;
-  --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, "Helvetica Neue", sans-serif;
+  --sans: "Figtree", "Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
 }
 
 * { box-sizing: border-box; }
@@ -62,7 +62,9 @@ body {
 .nav-item svg { width: 16px; height: 16px; opacity: 0.85; flex: none; }
 
 .sidebar .spacer { flex: 1; }
-.side-foot { font-size: 11px; color: var(--faint); padding: 10px 8px; line-height: 1.6; }
+.side-foot { font-size: 11px; color: var(--faint); padding: 10px 8px; line-height: 1.7; }
+.side-foot a { color: var(--faint); text-decoration: none; }
+.side-foot a:hover { color: var(--accent); }
 
 .main { padding: 28px 36px 60px; max-width: 1180px; }
 .page-head { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; margin-bottom: 20px; flex-wrap: wrap; }

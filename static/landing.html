@@ -1,0 +1,274 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PennyRoute — always the cheapest healthy model</title>
+<meta name="description" content="PennyRoute is the frugal AI router for OpenRouter: blended-cost provider ranking, health gates, automatic fallback chains, and an OpenAI-compatible endpoint.">
+<link rel="icon" href="/logo.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@300;400;500;600;700&family=Source+Code+Pro:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  /* ————— PennyRoute landing — Supabase-derived system ————— */
+  :root {
+    --bg: #171717;
+    --bg-deep: #0f0f0f;
+    --surface: #1e1e1e;
+    --border-subtle: #242424;
+    --border: #2e2e2e;
+    --border-prom: #363636;
+    --text: #fafafa;
+    --text-2: #b4b4b4;
+    --text-muted: #898989;
+    --green: #3ecf8e;
+    --green-link: #00c573;
+    --green-border: rgba(62, 207, 142, 0.3);
+    --mono: 'Source Code Pro', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    --sans: 'Figtree', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font: 400 16px/1.5 var(--sans);
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 0 24px; }
+
+  /* ————— nav ————— */
+  nav {
+    position: sticky; top: 0; z-index: 40;
+    background: rgba(23, 23, 23, 0.86);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--border);
+  }
+  nav .wrap { display: flex; align-items: center; gap: 28px; height: 62px; }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 600; font-size: 15px; text-decoration: none; color: var(--text); }
+  .brand img { width: 26px; height: 26px; }
+  .brand em { color: var(--green); font-style: normal; }
+  .nav-links { display: flex; gap: 22px; margin-left: auto; }
+  .nav-links a { color: var(--text-muted); text-decoration: none; font-size: 14px; font-weight: 500; }
+  .nav-links a:hover { color: var(--text); }
+  .btn-pill {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: var(--bg-deep); color: var(--text);
+    border: 1px solid var(--text); border-radius: 9999px;
+    padding: 9px 28px; font-size: 14px; font-weight: 500;
+    text-decoration: none; cursor: pointer;
+  }
+  .btn-pill.ghost { border-color: var(--border-prom); color: var(--text); opacity: 0.9; }
+  .btn-pill.green { border-color: transparent; background: var(--green); color: #052e1e; }
+  .btn-pill:hover { transform: translateY(-1px); border-color: var(--green-border); }
+  .btn-pill.green:hover { border-color: transparent; filter: brightness(1.06); }
+
+  /* ————— hero ————— */
+  .hero { padding: 110px 0 84px; text-align: center; }
+  h1 {
+    font-size: clamp(40px, 7vw, 72px); line-height: 1.0; font-weight: 400;
+    letter-spacing: -0.02em; margin: 0 auto 22px; max-width: 900px;
+    text-wrap: pretty;
+  }
+  .hero-sub {
+    color: var(--text-2); font-size: 17px; line-height: 1.55; max-width: 640px;
+    margin: 0 auto 36px; text-wrap: pretty;
+  }
+  .hero-cta { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; margin-bottom: 52px; }
+  .hero-code {
+    max-width: 700px; margin: 0 auto; text-align: left;
+    background: var(--bg-deep); border: 1px solid var(--border);
+    border-radius: 14px; padding: 22px 26px; font-family: var(--mono);
+    font-size: 13.5px; line-height: 1.7; color: var(--text-2); overflow: auto;
+  }
+  .hero-code b { color: var(--text); font-weight: 500; }
+  .hero-code .c { color: var(--green); }
+  .hero-code .cm { color: #7f7f7f; }
+
+  /* ————— sections ————— */
+  section { padding: 84px 0; border-top: 1px solid var(--border-subtle); }
+  .sec-head { max-width: 640px; margin-bottom: 48px; }
+  .sec-head h2 { font-size: clamp(28px, 4vw, 38px); font-weight: 400; line-height: 1.15; margin: 0 0 14px; letter-spacing: -0.01em; text-wrap: balance; }
+  .sec-head p { color: var(--text-2); margin: 0; text-wrap: pretty; }
+
+  .grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+  .card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 16px; padding: 26px;
+  }
+  .card:hover { border-color: var(--border-prom); }
+  .card h3 { font-size: 20px; font-weight: 400; letter-spacing: -0.01em; margin: 0 0 10px; }
+  .card p { color: var(--text-muted); font-size: 14px; line-height: 1.55; margin: 0; }
+  .card .mono-lab { font-family: var(--mono); font-size: 12px; color: var(--green); display: block; margin-bottom: 2px; }
+
+  /* ————— code — pipeline — */
+  .pipeline { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: center; }
+  .steps { counter-reset: step; }
+  .step { display: flex; gap: 18px; padding: 16px 0; border-bottom: 1px solid var(--border-subtle); counter-increment: step; }
+  .step:last-child { border-bottom: none; }
+  .step .n {
+    flex: none; width: 30px; height: 30px; border-radius: 9999px;
+    border: 1px solid var(--green-border); color: var(--green);
+    font-family: var(--mono); font-size: 13px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .step h3 { font-size: 16px; font-weight: 500; margin: 0 0 5px; }
+  .step p { color: var(--text-muted); font-size: 14px; margin: 0; line-height: 1.55; }
+
+  pre.code {
+    background: var(--bg-deep); border: 1px solid var(--border);
+    border-radius: 14px; padding: 24px 26px; margin: 0;
+    font-family: var(--mono); font-size: 13px; line-height: 1.75;
+    color: var(--text-2); overflow: auto;
+  }
+  pre.code b { color: var(--text); font-weight: 500; }
+  pre.code .c { color: var(--green); }
+  pre.code .cm { color: #7f7f7f; }
+
+  /* ————— models strip ————— */
+  .strip { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+  .chip {
+    border: 1px solid var(--border); background: var(--bg-deep);
+    border-radius: 9999px; padding: 7px 18px; font-family: var(--mono);
+    font-size: 12px; color: var(--text-2);
+  }
+  .chip b { color: var(--green); font-weight: 500; margin-right: 8px; }
+
+  /* ————— cta band ————— */
+  .cta { text-align: center; border-top: 1px solid var(--border-subtle); padding: 96px 0; }
+  .cta h2 { font-size: clamp(28px, 4vw, 40px); font-weight: 400; line-height: 1.1; margin: 0 0 16px; letter-spacing: -0.01em; }
+  .cta p { color: var(--text-2); margin: 0 0 34px; }
+
+  footer { border-top: 1px solid var(--border-subtle); padding: 40px 0 52px; color: var(--text-muted); font-size: 13px; }
+  footer .wrap { display: flex; justify-content: space-between; gap: 18px; flex-wrap: wrap; }
+  footer a { color: var(--text-muted); text-decoration: none; }
+  footer a:hover { color: var(--text); }
+  footer .m { font-family: var(--mono); font-size: 12px; }
+
+  @media (max-width: 880px) {
+    .grid3 { grid-template-columns: 1fr; }
+    .pipeline { grid-template-columns: 1fr; gap: 34px; }
+    .nav-links { display: none; }
+    .hero { padding: 74px 0 56px; }
+    section { padding: 60px 0; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="wrap">
+    <a class="brand" href="#top"><img src="/logo.svg" alt="logo"><span>Penny<em>Route</em></span></a>
+    <div class="nav-links">
+      <a href="#why">Why</a>
+      <a href="#how">How it works</a>
+      <a href="#api">API</a>
+      <a href="https://github.com/Bohsauro/pennyroute" target="_blank" rel="noopener">GitHub ↗</a>
+    </div>
+    <a class="btn-pill" href="/#/overview">Open dashboard</a>
+  </div>
+</nav>
+
+<header class="hero" id="top">
+  <div class="wrap">
+    <h1>Always the cheapest<br>healthy model.</h1>
+    <p class="hero-sub">PennyRoute ranks every provider of your models by real blended cost, then routes every request through the cheapest one that is actually fast and up. With automatic fallback chains.</p>
+    <div class="hero-cta">
+      <a class="btn-pill" href="/#/overview">Open dashboard</a>
+      <a class="btn-pill ghost" href="https://github.com/Bohsauro/pennyroute" target="_blank" rel="noopener">View on GitHub</a>
+    </div>
+    <div class="hero-code">
+      <span class="cm"># one endpoint, always the cheapest healthy provider</span><br>
+      <b>curl</b> http://<span class="c">your-host</span>:8490/v1/chat/completions \<br>
+      &nbsp;&nbsp;-H <span class="c">"X-API-Key: pnk-…"</span> \<br>
+      &nbsp;&nbsp;-d <span class="c">'{"model": "penny", "messages": [{"role": "user", "content": "hi"}]}'</span><br>
+      <span class="cm">→ served by deepseek/deepseek-v4-flash-0731 @ Baidu — $0.0009/M blended</span>
+    </div>
+  </div>
+</header>
+
+<section id="why">
+  <div class="wrap">
+    <div class="sec-head">
+      <h2>Same model, wildly different prices.</h2>
+      <p>The identical model id is hosted by dozens of providers, with up to a 100x spread on the same workload. And for agent traffic, most tokens are cache-reads, so list prices lie. Only <em>blended cost under your real token mix</em> tells the truth.</p>
+    </div>
+    <div class="grid3">
+      <div class="card">
+        <span class="mono-lab">Blended $/M</span>
+        <h3>Pricing that matches your usage</h3>
+        <p>Every model × provider endpoint is priced as input + cache + output weighted by your actual token mix (default measured: 14 / 85 / 1). A provider that's cheap on input but burns your cache bill can never win.</p>
+      </div>
+      <div class="card">
+        <span class="mono-lab">Health gates</span>
+        <h3>Cheap, but alive</h3>
+        <p>Throughput p50 ≥ 45 tps and uptime ≥ 99% are hard requirements. The cheapest endpoint nobody can actually call is worthless; PennyRoute never picks it.</p>
+      </div>
+      <div class="card">
+        <span class="mono-lab">Fallback chains</span>
+        <h3>Free first, then the cheapest paid</h3>
+        <p>Ordered pipelines like <span style="font-family:var(--mono);font-size:12.5px;color:var(--green-link)">free :free → cheapest paid</span>. The engine walks top → bottom and uses the first healthy step. Per-request failover retries the next candidate on error.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="how">
+  <div class="wrap">
+    <div class="sec-head">
+      <h2>Measure once, route forever.</h2>
+      <p>Live pricing from OpenRouter's endpoint stats: zero benchmark calls, zero tokens burned. The engine re-checks every few minutes and switches your config automatically.</p>
+    </div>
+    <div class="pipeline">
+      <div class="steps">
+        <div class="step"><div class="n">1</div><div><h3>Build your watchlist</h3><p>Pick models from the full OpenRouter catalog. PennyRoute fetches every provider's live pricing, latency, throughput and uptime.</p></div></div>
+        <div class="step"><div class="n">2</div><div><h3>Rank by blended cost</h3><p>Each endpoint gets a blended $/M under your mix, gated on health. The ranking is recomputed live, no stale numbers.</p></div></div>
+        <div class="step"><div class="n">3</div><div><h3>Route, and fail over</h3><p>Requests hit one OpenAI-compatible endpoint. The primary chain picks the cheapest healthy provider; on error the next candidate serves.</p></div></div>
+      </div>
+      <div>
+        <pre class="code"><span class="cm"># data/chain.json — ordered pipeline</span><br>{<br>&nbsp;&nbsp;<span class="c">"name"</span>: "main",<br>&nbsp;&nbsp;<span class="c">"primary"</span>: true,<br>&nbsp;&nbsp;<span class="c">"entries"</span>: [<br>&nbsp;&nbsp;&nbsp;&nbsp;{ <span class="c">"type"</span>: "cheapest", <span class="c">"filter"</span>: ":free" }<br>&nbsp;&nbsp;&nbsp;&nbsp;{ <span class="c">"type"</span>: "cheapest" }<br>&nbsp;&nbsp;]<br>}</pre>
+        <div style="height:18px"></div>
+        <pre class="code"><span class="cm"># python — any OpenAI-compatible client</span><br><b>from</b> openai <b>import</b> OpenAI<br><br>client = OpenAI(<br>&nbsp;&nbsp;base_url=<span class="c">"http://your-host:8490/v1"</span>,<br>&nbsp;&nbsp;api_key=<span class="c">"pnk-…"</span>)<br>r = client.chat.completions.create(<br>&nbsp;&nbsp;model=<span class="c">"penny"</span>,<br>&nbsp;&nbsp;messages=[{<span class="c">"role"</span>: <span class="c">"user"</span>, <span class="c">"content"</span>: <span class="c">"hello"</span>}])<br>print(r.model) <span class="cm"># who actually served you</span></pre>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="api">
+  <div class="wrap" style="text-align:center">
+    <div class="sec-head" style="margin-left:auto;margin-right:auto">
+      <h2>Point anything at PennyRoute.</h2>
+      <p>OpenAI-compatible <span class="m" style="font-family:var(--mono);color:var(--green-link)">/v1/chat/completions</span> with its own API keys. Claude Code, Cursor, LangChain, Aider — whatever speaks OpenAI can ride your cheapest healthy provider. Streaming included.</p>
+    </div>
+    <div class="strip">
+      <span class="chip"><b>Claude Code</b>ANTHROPIC_BASE_URL</span>
+      <span class="chip"><b>openai SDK</b>base_url</span>
+      <span class="chip"><b>LangChain</b>OpenAI()</span>
+      <span class="chip"><b>curl</b>-H "X-API-Key"</span>
+      <span class="chip"><b>self-hosted</b>0.0.0.0</span>
+    </div>
+  </div>
+</section>
+
+<div class="cta">
+  <div class="wrap">
+    <h2>Run it on your own box.<br><span style="color:var(--green)">Keep every cent you save.</span></h2>
+    <p>One command to install. State is plain JSON in <span style="font-family:var(--mono);font-size:13px">data/</span>. No cloud, no lock-in.</p>
+    <div class="hero-cta">
+      <a class="btn-pill" href="/#/overview">Open dashboard</a>
+      <a class="btn-pill ghost" href="https://github.com/Bohsauro/pennyroute" target="_blank" rel="noopener">★ Star on GitHub</a>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <div class="wrap">
+    <div>PennyRoute — the frugal AI router. MIT licensed.</div>
+    <div><a href="https://github.com/Bohsauro/pennyroute" target="_blank" rel="noopener">github.com/Bohsauro/pennyroute</a></div>
+    <div class="m">v1.2.0</div>
+  </div>
+</footer>
+
+</body>
+</html>

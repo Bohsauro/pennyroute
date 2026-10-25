@@ -314,6 +314,11 @@ def index():
     return FileResponse(STATIC_DIR / "index.html")
 
 
+@app.get("/landing")
+def landing():
+    return FileResponse(STATIC_DIR / "landing.html")
+
+
 @app.get("/style.css")
 def style():
     return FileResponse(STATIC_DIR / "style.css", media_type="text/css")

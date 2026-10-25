@@ -37,14 +37,15 @@ PennyRoute measures, ranks, and switches — automatically.
 - **Auto-routing** — a background engine re-evaluates the primary chain every N minutes. If the best healthy choice changes, PennyRoute rewrites its config and restarts the gateway. Zero tokens burned (no benchmark calls — pricing comes from OpenRouter's live endpoint stats).
 - **It *is* the API** — an OpenAI-compatible endpoint (`/v1/chat/completions`, `/v1/models`) with its own API keys. Point the `openai` SDK, LangChain, Aider, or anything at PennyRoute: every request is routed through your fallback chain and served by the cheapest healthy provider at that moment. Streaming included.
 - **Built-in Chat** — paste your PennyRoute key in the WebUI and talk to the router from any device on Tailscale / LAN (phone included). Shows which model served each reply.
+- **Landing page** — a self-contained marketing page explaining the project, served at `/landing`.
 - **WebUI** — overview, live ranking, chain editor, key management, model search across the full OpenRouter catalog, settings, event log.
 - **Hermes Agent native** — writes `model.default` + `provider_routing.order` (as a *real YAML list* — the well-known silent-pin pitfall) into `~/.hermes/config.yaml`.
 
 ## Screenshots
 
-| Overview | Ranking | API endpoint | Chat |
+| Landing | Overview | Ranking | Chat |
 |---|---|---|---|
-| ![Overview](assets/screenshot-overview.png) | ![Ranking](assets/screenshot-ranking.png) | ![API](assets/screenshot-api.png) | ![Chat](assets/screenshot-chat.png) |
+| ![Landing](assets/screenshot-landing.png) | ![Overview](assets/screenshot-overview.png) | ![Ranking](assets/screenshot-ranking.png) | ![Chat](assets/screenshot-chat.png) |
 
 ## Quickstart
 
