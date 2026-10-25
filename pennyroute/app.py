@@ -64,8 +64,18 @@ def v1_models(request: Request):
                                 {"min_tps": settings["min_tps"],
                                  "min_uptime": settings["min_uptime"]}) if primary else None
     served = res["model"] if res else None
-    data = [{"id": m["slug"], "object": "model",
-             "owned_by": "pennyroute"} for m in store.load_models()]
+    # chains first: every fallback chain is selectable as a "model"
+    data = [
+        {"id": "penny", "object": "model",
+         "owned_by": "pennyroute-chain-primary",
+         "created": 0}
+    ]
+    for c in chains:
+        if not c.get("primary"):
+            data.append({"id": f"penny:{c['name']}", "object": "model",
+                         "owned_by": "pennyroute-chain", "created": 0})
+    data += [{"id": m["slug"], "object": "model",
+              "owned_by": "pennyroute"} for m in store.load_models()]
     if served:
         data.insert(0, {"id": served, "object": "model", "owned_by": "pennyroute-primary"})
     return {"object": "list", "data": data}

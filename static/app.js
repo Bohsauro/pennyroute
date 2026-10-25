@@ -626,11 +626,15 @@ function viewChat() {
       <div class="row-ctl">
         <div><label class="field">PennyRoute API key</label>
           <input type="password" id="chat-key" placeholder="pnk-…" value="${esc(savedKey)}" class="mono"></div>
-        <div style="max-width:260px"><label class="field">Route</label>
+        <div style="min-width:300px"><label class="field">Route — fallback chain or model</label>
           <select id="chat-model">
-            <option value="penny">penny — primary chain</option>
-            ${CHAINS.filter(c => !c.primary).map(c => `<option value="penny:${esc(c.name)}">penny:${esc(c.name)}</option>`).join("")}
-            <option value="__ids__">— specific model —</option>
+            <optgroup label="Fallback chains">
+              <option value="penny">★ penny — primary chain</option>
+              ${CHAINS.filter(c => !c.primary).map(c => `<option value="penny:${esc(c.name)}">→ penny:${esc(c.name)}</option>`).join("")}
+            </optgroup>
+            <optgroup label="Single models">
+              <option value="__ids__">— pick a model —</option>
+            </optgroup>
           </select></div>
         <div style="max-width:300px" id="chat-model-wrap" style="display:none"><label class="field">Model</label>
           <select id="chat-model-id"></select></div>
@@ -658,7 +662,12 @@ function viewChat() {
       try {
         const key = $("#chat-key").value.trim();
         const d = await fetch("/v1/models", { headers: { "X-API-Key": key } }).then(r => r.json());
-        modelIdSel.innerHTML = (d.data || []).map(m => `<option value="${esc(m.id)}">${esc(m.id)}${m.owned_by === "pennyroute-primary" ? " ★primary" : ""}</option>`).join("");
+        const chains = (d.data || []).filter(m => m.id.startsWith("penny") && m.owned_by.includes("chain"));
+        const models = (d.data || []).filter(m => !m.owned_by.includes("chain"));
+        const escOpt = m => `<option value="${esc(m.id)}">${esc(m.id)}${m.owned_by === "pennyroute-primary" ? " ★primary" : ""}</option>`;
+        modelIdSel.innerHTML =
+          (chains.length ? '<optgroup label="Fallback chains">' + chains.map(escOpt).join("") + "</optgroup>" : "")
+          + '<optgroup label="Models">' + models.map(escOpt).join("") + "</optgroup>";
       } catch (e) { modelIdSel.innerHTML = '<option value="penny">penny</option>'; }
     } else wrap.style.display = "none";
   };
