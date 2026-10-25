@@ -106,6 +106,13 @@ def evaluate_primary() -> dict:
                 restart=settings.get("gateway_restart", True))
         else:
             report["applied"] = "unchanged"
+        # telemetry snapshot: what the router is serving right now
+        store.push_telemetry({
+            "ts": time.strftime("%Y-%m-%dT%H:%M:%S"),
+            "model": res["model"],
+            "provider": res["provider"],
+            "blended": res["blended"],
+        })
     return report
 
 

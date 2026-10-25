@@ -17,6 +17,8 @@ MODELS_FILE = DATA_DIR / "models.json"
 CHAINS_FILE = DATA_DIR / "chains.json"
 SETTINGS_FILE = DATA_DIR / "settings.json"
 EVENTS_FILE = DATA_DIR / "events.jsonl"
+TELEMETRY_FILE = DATA_DIR / "telemetry.json"
+TELEMETRY_MAX = 288  # 24h @ 5min
 
 _lock = threading.Lock()
 
@@ -150,3 +152,18 @@ def load_events(limit: int = 100) -> list:
         except json.JSONDecodeError:
             continue
     return out
+
+
+def push_telemetry(point: dict):
+    """Append a routing snapshot (ts, model, provider, blended, tps, latency,
+    uptime) into a rolling ring buffer (last TELEMETRY_MAX points)."""
+    with _lock:
+        data = _read_json(TELEMETRY_FILE, [])
+        data.append(point)
+        data = data[-TELEMETRY_MAX:]
+        _write_json(TELEMETRY_FILE, data)
+
+
+def load_telemetry(limit: int = TELEMETRY_MAX) -> list:
+    data = _read_json(TELEMETRY_FILE, [])
+    return data[-limit:]

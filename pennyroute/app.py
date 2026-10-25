@@ -307,6 +307,41 @@ def api_resolve():
     return {"resolution": res, "key_count": len(keys.list_keys())}
 
 
+@app.get("/api/pipeline")
+def api_pipeline():
+    """Fallback pipeline: ordered candidates with live indicators."""
+    settings = store.load_settings()
+    chains = store.load_chains()
+    primary = next((c for c in chains if c.get("primary")), None)
+    if not primary:
+        return {"candidates": [], "active": engine.current_active()}
+
+    cands = router_proxy.build_candidates(primary, settings)
+    out = []
+    for c in cands[:6]:
+        rows = ranking.rank_endpoints(c["model"], settings["mix"],
+                                      {"min_tps": settings["min_tps"],
+                                       "min_uptime": settings["min_uptime"]})
+        ep = next((r for r in rows if r["provider"] == c["provider"]
+                   and not (isinstance(r, dict) and "error" in r)), None)
+        out.append({
+            "model": c["model"],
+            "provider": c["provider"],
+            "healthy": bool(ep and ep["healthy"]),
+            "tps": ep["tps"] if ep else None,
+            "latency": ep["latency"] if ep else None,
+            "uptime": ep["uptime"] if ep else None,
+            "blended": ep["blended"] if ep else None,
+        })
+    return {"candidates": out, "active": engine.current_active()}
+
+
+@app.get("/api/telemetry")
+def api_telemetry():
+    """Routing snapshots over time (blended $/M, provider)."""
+    return {"points": store.load_telemetry()}
+
+
 # ---------------------------------------------------------------- static --
 
 @app.get("/")

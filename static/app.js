@@ -73,53 +73,198 @@ async function refreshAll() {
 
 /* ---------------------------------------------------------------- views */
 
+/* sparkline helper: area path from values */
+function sparkPath(vals, w = 200, h = 34) {
+  if (!vals.length) return "";
+  const min = Math.min(...vals), max = Math.max(...vals);
+  const span = (max - min) || 1;
+  const x = i => (i / (vals.length - 1)) * w;
+  const y = v => h - 2 - ((v - min) / span) * (h - 6);
+  const pts = vals.map((v, i) => `${x(i).toFixed(1)},${y(v).toFixed(1)}`);
+  return { line: "M" + pts.join(" L"), area: "M0," + h + " L" + pts.join(" L") + " L" + w + "," + h + " Z", max, min };
+}
+
+/* donut helper: stroke-dasharray segments */
+function donutSegs(parts, r = 34, c = 2 * Math.PI * r) {
+  const total = parts.reduce((a, b) => a + b[1], 0) || 1;
+  let acc = 0;
+  return parts.map(([label, v, color]) => {
+    const frac = v / total;
+    const seg = { label, v, color, frac,
+      dash: `${(frac * c).toFixed(1)} ${(c * (1 - frac)).toFixed(1)}`,
+      offset: (-acc * c).toFixed(1) };
+    acc += frac;
+    return seg;
+  });
+}
+
+function svgSparkline(vals, color = "var(--green)") {
+  if (!vals || vals.length < 2) return "";
+  const { line, area } = sparkPath(vals);
+  return `<svg class="spark-svg" viewBox="0 0 200 34" preserveAspectRatio="none">
+    <path d="${area}" fill="${color}" opacity="0.12"></path>
+    <path d="${line}" fill="none" stroke="${color}" stroke-width="1.4"></path>
+  </svg>`;
+}
+
+const PALETTE = ["var(--green)", "var(--blue)", "var(--amber)", "var(--red)", "#a78bfa"];
+
 function viewOverview() {
   const a = STATE.active;
   const order = (a.order && a.order.length) ? a.order.join(", ") : "auto";
   const primary = CHAINS.find(c => c.name === STATE.primary_chain);
-  let chainHtml = '<div class="empty">No primary chain</div>';
-  if (primary) {
-    chainHtml = '<div class="chain-flow">' + primary.entries.map((e, i) => {
-      const m = e.type === "cheapest" ? "cheapest in watchlist" : esc(e.model);
-      const p = e.type === "cheapest" ? "auto" : esc(e.provider || "auto");
-      return `<div class="chain-node"><div class="t">#${i + 1}</div><div class="m">${m}</div><div class="p">@ ${p}</div></div>` +
-        (i < primary.entries.length - 1 ? '<span class="chain-arrow">→</span>' : "");
-    }).join("") + "</div>";
-  }
-  const top5 = RANKED.slice(0, 5).map((m, i) => {
-    const b = m.best; if (!b) return "";
-    const dotCls = b.healthy ? "ok" : (b.tps ? "warn" : "bad");
-    const barW = Math.min(100, Math.round((b.tps || 0) / 200 * 100));
-    const barCls = b.tps >= 100 ? "ok" : b.tps >= 45 ? "warn" : "bad";
-    const barColor = barCls === "ok" ? "var(--green-soft)" : barCls === "warn" ? "var(--amber)" : "var(--red)";
-    return `<tr><td class="faint">${i + 1}</td>
-      <td><span class="model-name">${esc(m.slug)}</span></td>
-      <td><span class="prov"><span class="dot ${dotCls}"></span>${esc(b.provider)}</span></td>
-      <td class="num"><span class="pnum">${fmt(b.blended)}</span></td>
-      <td class="num"><span class="tps">${b.tps ? b.tps.toFixed(0) : "n/a"}<span class="tbar"><span style="width:${barW}%;background:${barColor}"></span></span></span></td></tr>`;
-  }).join("");
+  const tpsFirst = RANKED[0]?.best;
   $("#view").innerHTML = `
     <div class="page-head">
       <div><h1>Overview</h1><div class="sub">What is running right now, and what will run if this one fails.</div></div>
       <button class="primary" id="btn-evaluate">Evaluate now</button>
     </div>
-    <div class="metrics">
-      <div class="metric"><div class="label">Active model</div><div class="value">${esc(a.model || "—")}</div><div class="sub">@ ${esc(order)}</div></div>
-      <div class="metric"><div class="label">Primary chain</div><div class="value">${esc(STATE.primary_chain || "—")}</div><div class="sub">${primary ? primary.entries.length + " fallback step(s)" : "configure one in Chains"}</div></div>
-      <div class="metric"><div class="label">Watchlist</div><div class="value">${MODELS.length}</div><div class="sub">ranked every ${STATE.settings.interval_min} min</div></div>
-    </div>
-    <div class="panel"><h2><span class="k">Fallback pipeline</span> — ${esc(STATE.primary_chain || "none")}</h2>${chainHtml}
-      <div class="hint">The engine walks this chain top → bottom. First healthy step wins; switches are applied to <span style="font-family:var(--mono)">~/.hermes/config.yaml</span> automatically.</div></div>
-    <div class="panel"><h2><span class="k">Top 5 cheapest</span> — blended, your mix</h2>
-      <table><thead><tr><th class="num">#</th><th>Model</th><th>Provider</th><th class="num">Blended $/M</th><th class="num">tps</th></tr></thead>
-      <tbody>${top5}</tbody></table></div>`;
+    <div class="ov-grid">
+      <div class="ov-main">
+        <div id="ov-metrics" class="ov-metrics"><span class="spinner"></span></div>
+        <div class="panel"><h2><span class="k">Fallback pipeline</span></h2><div id="ov-pipe"><span class="spinner"></span></div></div>
+        <div class="panel"><h2><span class="k">Top 5 cheapest</span> — blended, your mix</h2><div id="ov-table"><span class="spinner"></span></div></div>
+      </div>
+      <div class="ov-side" id="ov-side"><span class="spinner"></span></div>
+    </div>`;
   $("#btn-evaluate").onclick = async () => {
     toast("Evaluating chain…");
     try { const r = await api("/api/evaluate", { method: "POST" });
       toast(r.ok ? `OK: ${r.resolution ? r.resolution.model + " @ " + r.resolution.provider : "no healthy step"}` : "Failed: " + r.reason, !r.ok);
-      await loadCommon();
+      await loadOverview();
     } catch (e) { toast(e.message, true); }
   };
+  loadOverview();
+  $("#ov-side").style.display = "grid";
+}
+
+let _ovTimer = null;
+
+async function loadOverview() {
+  const [tml, pipe, ev] = await Promise.all([
+    api("/api/telemetry").catch(() => ({ points: [], avg_latency: 0 })),
+    api("/api/pipeline").catch(() => ({ candidates: [] })),
+    api("/api/events?limit=6").catch(() => ({ events: [] })),
+  ]);
+  // average latency across candidates (ms)
+  const lats = (pipe.candidates || []).map(c => c.latency).filter(v => v != null);
+  tml.avg_latency = lats.length ? lats.reduce((a, b) => a + b, 0) / lats.length : 0;
+  const a = STATE.active;
+
+  // metric row + pipeline + table + side panel
+  const blendedSeries = (tml.points || []).map(p => p.blended).filter(v => v != null);
+  const last = blendedSeries.length ? blendedSeries[blendedSeries.length - 1] : null;
+  const first = blendedSeries.length ? blendedSeries[0] : null;
+  const delta = (last != null && first != null && first > 0) ? ((last - first) / first * 100) : null;
+  const dTxt = delta != null ? `${delta >= 0 ? "+" : ""}${delta.toFixed(1)}% 24h` : "collecting";
+  const avgLat = Math.round(tml.avg_latency || 0);
+
+  $("#ov-metrics").innerHTML = `
+    <div class="metrics" style="position:relative">
+      <div class="metric spark">
+        ${svgSparkline(blendedSeries, "var(--green)")}
+        <div class="label">Blended $/M</div>
+        <div class="value">${last != null ? fmt(last) : "—"}</div>
+        <div class="sub">${esc(a.model || "—")} @ ${esc((a.order && a.order[0]) || "auto")}</div>
+        <div class="delta ${delta != null && delta > 0 ? "" : "down"}">${esc(dTxt)}</div>
+      </div>
+      <div class="metric">
+        <div class="label">Latency p50</div>
+        <div class="value">${avgLat ? avgLat + "ms" : "—"}</div>
+        <div class="sub">avg across chain candidates</div>
+      </div>
+      <div class="metric">
+        <div class="label">Watchlist</div>
+        <div class="value">${MODELS.length}</div>
+        <div class="sub">ranked every ${STATE.settings.interval_min} min</div>
+      </div>
+    </div>`;
+
+  const cands = pipe.candidates || [];
+  $("#ov-pipe").innerHTML = cands.length ? `<div class="flow">` + cands.map((c, i) => {
+    const isActive = c.model === a.model && c.provider === (a.order && a.order[0]);
+    const lvl = i === 0 ? "Live" : i === 1 ? "Failover" : i === 2 ? "Emergency" : "Fallback";
+    return `<div class="fnode ${isActive ? "active" : "standby"}">
+        <div class="lbl">${isActive ? "● " : ""}${lvl}</div>
+        <div class="sub">${esc(c.provider)}</div>
+        <div class="m2">${esc(c.model)}</div>
+        <div class="stats"><span>${c.latency != null ? Math.round(c.latency) + "ms" : "?"}</span><span>${c.tps != null ? c.tps.toFixed(0) + " tps" : "?"}</span><span>${c.uptime != null ? c.uptime.toFixed(1) + "%" : "?"}</span></div>
+      </div>` + (i < cands.length - 1 ? `<div class="farrow"><span class="dash">➔</span></div>` : "");
+  }).join("") + `</div>` : '<div class="empty">no candidates — configure a chain</div>';
+
+  const maxBl = Math.max(...RANKED.map(m => m.best ? m.best.blended : 0).filter(Boolean), 0.000001);
+  $("#ov-table").innerHTML = `<table><thead><tr>
+      <th class="num">#</th><th>Model</th><th>Provider</th><th class="num">Health</th><th class="num">tps</th><th class="num">Blended $/M</th><th class="num">pct of max</th><th></th>
+    </tr></thead><tbody>` + RANKED.slice(0, 5).map((m, i) => {
+      const b = m.best; if (!b) return "";
+      const pct = b.blended > 0 ? ((b.blended / maxBl) * 100).toFixed(0) : "0";
+      return `<tr class="${m.slug === a.model ? "active-row" : ""}">
+        <td class="num faint"><span class="badge neut">#${i + 1}</span></td>
+        <td><span class="model-name">${esc(m.slug)}</span></td>
+        <td><span class="prov"><span class="dot ${b.healthy ? "ok" : "bad"}"></span>${esc(b.provider)}</span></td>
+        <td class="num"><span style="display:inline-flex;align-items:center;gap:7px;font-family:var(--mono);font-size:12px"><span class="pulse" style="width:6px;height:6px"></span>${b.uptime != null ? b.uptime.toFixed(1) + "%" : "—"}</span></td>
+        <td class="num"><span class="tps">${b.tps ? b.tps.toFixed(0) : "n/a"}<span class="tbar"><span style="width:${Math.min(100, Math.round((b.tps || 0) / 200 * 100))}%;background:linear-gradient(90deg,var(--green-soft),var(--blue))"></span></span></span></td>
+        <td class="num"><span class="pnum">${fmt(b.blended)}</span></td>
+        <td class="num"><span class="badge ${pct <= 30 ? "ok" : pct <= 70 ? "warn" : "bad"}">${pct}%</span></td>
+        <td><button class="sm ghost" data-m="${esc(m.slug)}" data-p="${esc(b.provider)}">Route now</button></td>
+      </tr>`;
+    }).join("") + `</tbody></table>`;
+  $$("#ov-table button[data-m]").forEach(btn => btn.onclick = () => applyChoice(btn.dataset.m, btn.dataset.p));
+
+  // side panel
+  const b = RANKED[0] ? RANKED[0].best : null;
+  const donut = b ? donutSegs([
+    ["in", b.in, "var(--blue)"],
+    ["cache", b.cache, "var(--green)"],
+    ["out", b.out, "var(--amber)"],
+  ]) : [];
+  const maxC = Math.max(...cands.map(c => c.blended || 0).filter(Boolean), 0.0001);
+  $("#ov-side").innerHTML = `
+    <div class="panel">
+      <span class="live-pill"><span class="pulse"></span><span>Routing Engine Live</span><span class="u">· 5m</span></span>
+      <div style="margin-top:12px" class="hint"><span style="font-family:var(--mono)">${esc(a.model || "—")}</span> @ <span style="font-family:var(--mono)">${esc((a.order && a.order[0]) || "—")}</span></div>
+    </div>
+    <div class="panel"><h2><span class="k">Blended cost</span> — 24h trend</h2>
+      <div style="position:relative;height:76px">
+        ${svgSparkline(blendedSeries.length > 1 ? blendedSeries : [0, 0, 0, last || 0, last || 0], "var(--green)")}
+        <div style="position:absolute;left:0;bottom:0"><span class="badge ok">${last != null ? fmt(last) : "—"} $/M now</span></div>
+      </div>
+      <div class="hint" style="margin-top:4px">${tml.points.length} samples · engine snapshots</div>
+    </div>
+    <div class="panel"><h2><span class="k">Cost composition</span> — active endpoint</h2>
+      ${b ? `<div class="donut-wrap">
+        <svg width="86" height="86" viewBox="0 0 86 86">
+          <circle cx="43" cy="43" r="34" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="11"></circle>
+          ${donut.map(s => `<circle cx="43" cy="43" r="34" fill="none" stroke="${s.color}" stroke-width="11" stroke-dasharray="${s.dash}" stroke-dashoffset="${s.offset}" transform="rotate(-90 43 43)"></circle>`).join("")}
+          <text x="43" y="39" text-anchor="middle" fill="var(--text)" font-size="13" font-family="var(--mono)" font-weight="600">${fmt(b.blended)}</text>
+          <text x="43" y="54" text-anchor="middle" fill="var(--faint)" font-size="8" font-family="var(--mono)">$/M</text>
+        </svg>
+        <div class="share-list">${donut.map(s => `<div class="share-row"><span class="dot" style="background:${s.color}"></span><span class="nm">${s.label}</span><span class="bar"><span style="width:${(s.frac * 100).toFixed(0)}%;background:${s.color}"></span></span><span class="pc">${(s.frac * 100).toFixed(0)}%</span></div>`).join("")}</div>
+      </div>` : '<div class="empty">no data</div>'}
+    </div>
+    <div class="panel"><h2><span class="k">Chain candidates</span> — cost ladder</h2>
+      <div class="share-list">${cands.slice(0, 5).map((c, i) => `<div class="share-row"><span class="dot" style="background:${PALETTE[i % PALETTE.length]}"></span><span class="nm">${esc(c.provider)}</span><span class="bar"><span style="width:${((c.blended || 0) / maxC * 100).toFixed(0)}%;background:${PALETTE[i % PALETTE.length]}"></span></span><span class="pc">${c.blended != null ? fmt(c.blended) : "—"}</span></div>`).join("") || '<div class="empty">no candidates</div>'}</div>
+    </div>
+    <div class="panel"><h2><span class="k">Recent events</span></h2>
+      <div>${ev.events.length ? ev.events.slice(0, 5).map(e => `<div class="ev-row"><span class="ts">${esc(e.ts)}</span><span class="badge ${e.event === "switch" ? "ok" : e.event === "engine_error" ? "bad" : "neut"}">${esc(e.event)}</span></div>`).join("") : '<div class="empty">no events</div>'}</div>
+    </div>`;
+
+  // live refresher: ping every 5s (lightweight: just update pill + latency)
+  clearInterval(_ovTimer);
+  _ovTimer = setInterval(async () => {
+    try {
+      const t2 = await api("/api/telemetry");
+      const pts = t2.points || [];
+      const lastP = pts.length ? pts[pts.length - 1] : null;
+      const p2 = await api("/api/pipeline");
+      const l2 = (p2.candidates || []).map(c => c.latency).filter(v => v != null);
+      const la = l2.length ? Math.round(l2.reduce((a, b) => a + b, 0) / l2.length) : 0;
+      const pill = document.querySelector("#ov-side .live-pill .u");
+      const latE = document.querySelector("#ov-metrics .metric:nth-child(2) .value");
+      if (pill) pill.textContent = "· " + (la ? la + "ms" : "—");
+      if (latE) latE.textContent = la ? la + "ms" : "—";
+    } catch (e) {}
+  }, 5000);
 }
 
 function mixControls(id) {
