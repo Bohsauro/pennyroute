@@ -8,150 +8,179 @@
 <link rel="icon" href="logo.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@300;400;500;600;700&family=Source+Code+Pro:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Hanken Grotesk:wght@300;400;500;600;700&family=Hanken Grotesk+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
-  /* ————— PennyRoute landing — Supabase-derived system ————— */
   :root {
-    --bg: #171717;
-    --bg-deep: #0f0f0f;
-    --surface: #1e1e1e;
-    --border-subtle: #242424;
-    --border: #2e2e2e;
-    --border-prom: #363636;
-    --text: #fafafa;
-    --text-2: #b4b4b4;
-    --text-muted: #898989;
+    --bg: #09090b;
+    --bg2: #0f1011;
+    --panel: rgba(255, 255, 255, 0.02);
+    --panel-hi: rgba(255, 255, 255, 0.035);
+    --panel-2: rgba(255, 255, 255, 0.05);
+    --border: rgba(255, 255, 255, 0.06);
+    --border-hi: rgba(255, 255, 255, 0.11);
+    --text: #f7f8f8;
+    --text-2: #a1a7b0;
+    --muted: #8a8f98;
+    --faint: #787e88;
     --green: #3ecf8e;
-    --green-link: #00c573;
-    --green-border: rgba(62, 207, 142, 0.3);
-    --mono: 'Source Code Pro', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-    --sans: 'Figtree', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+    --green-dim: rgba(62, 207, 142, 0.12);
+    --amber: #ffbc33;
+    --blue: #55b3ff;
+    --red: #ff6363;
+    --sans: "Hanken Grotesk", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --mono: "Hanken Grotesk Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   }
   * { box-sizing: border-box; }
-  html { scroll-behavior: smooth; }
   body {
     margin: 0;
     background: var(--bg);
     color: var(--text);
-    font: 400 16px/1.5 var(--sans);
+    font: 400 16px/1.55 var(--sans);
+    letter-spacing: -0.005em;
     -webkit-font-smoothing: antialiased;
+    font-feature-settings: "cv01", "ss03", "liga";
   }
-  .wrap { max-width: 1120px; margin: 0 auto; padding: 0 24px; }
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 0 24px; position: relative; z-index: 2; }
 
-  /* ————— nav ————— */
-  nav {
-    position: sticky; top: 0; z-index: 40;
-    background: rgba(23, 23, 23, 0.86);
-    backdrop-filter: blur(10px);
-    border-bottom: 1px solid var(--border);
+  /* ambient glow */
+  body::before {
+    content: "";
+    position: fixed; inset: 0; pointer-events: none; z-index: 0;
+    background:
+      radial-gradient(900px 460px at 74% -8%, rgba(62, 207, 142, 0.08), transparent 60%),
+      radial-gradient(760px 400px at 4% 108%, rgba(85, 179, 255, 0.05), transparent 55%);
   }
-  nav .wrap { display: flex; align-items: center; gap: 28px; height: 62px; }
-  .brand { display: flex; align-items: center; gap: 10px; font-weight: 600; font-size: 15px; text-decoration: none; color: var(--text); }
-  .brand img { width: 26px; height: 26px; }
+
+  /* nav */
+  nav { position: sticky; top: 0; z-index: 40; background: rgba(9, 9, 11, 0.8); backdrop-filter: blur(14px); border-bottom: 1px solid var(--border); }
+  nav .wrap { display: flex; align-items: center; gap: 26px; height: 60px; }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 600; font-size: 15px; letter-spacing: -0.02em; text-decoration: none; color: var(--text); }
+  .brand img { width: 24px; height: 24px; }
   .brand em { color: var(--green); font-style: normal; }
   .nav-links { display: flex; gap: 22px; margin-left: auto; }
-  .nav-links a { color: var(--text-muted); text-decoration: none; font-size: 14px; font-weight: 500; }
+  .nav-links a { color: var(--muted); text-decoration: none; font-size: 13.5px; font-weight: 500; }
   .nav-links a:hover { color: var(--text); }
-  .btn-pill {
-    display: inline-flex; align-items: center; gap: 8px;
-    background: var(--bg-deep); color: var(--text);
-    border: 1px solid var(--text); border-radius: 9999px;
-    padding: 9px 28px; font-size: 14px; font-weight: 500;
-    text-decoration: none; cursor: pointer;
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    background: linear-gradient(180deg, #1d1f22, #17181a);
+    color: var(--text); border: 1px solid var(--border-hi); border-radius: 7px;
+    padding: 9px 22px; font-size: 13.5px; font-weight: 500; text-decoration: none; cursor: pointer;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.06), inset 0 -1px 0 rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.4);
+    transition: border-color .12s ease, filter .12s ease;
   }
-  .btn-pill.ghost { border-color: var(--border-prom); color: var(--text); opacity: 0.9; }
-  .btn-pill.green { border-color: transparent; background: var(--green); color: #052e1e; }
-  .btn-pill:hover { transform: translateY(-1px); border-color: var(--green-border); }
-  .btn-pill.green:hover { border-color: transparent; filter: brightness(1.06); }
+  .btn:hover { border-color: rgba(255,255,255,0.2); filter: brightness(1.12); }
+  .btn.ghost { background: transparent; box-shadow: none; border-color: var(--border); }
+  .btn.accent:hover { border-color: var(--green); box-shadow: 0 0 16px rgba(62,207,142,0.15); }
 
-  /* ————— hero ————— */
-  .hero { padding: 110px 0 84px; text-align: center; }
+  /* hero */
+  .hero { padding: 104px 0 76px; text-align: center; }
   h1 {
-    font-size: clamp(40px, 7vw, 72px); line-height: 1.0; font-weight: 400;
-    letter-spacing: -0.02em; margin: 0 auto 22px; max-width: 900px;
-    text-wrap: pretty;
+    font-size: clamp(42px, 6.5vw, 66px); line-height: 1.02; font-weight: 600;
+    letter-spacing: -0.035em; margin: 0 auto 20px; max-width: 880px;
   }
-  .hero-sub {
-    color: var(--text-2); font-size: 17px; line-height: 1.55; max-width: 640px;
-    margin: 0 auto 36px; text-wrap: pretty;
+  .hero-sub { color: var(--muted); font-size: 17px; line-height: 1.6; max-width: 600px; margin: 0 auto 34px; }
+  .hero-cta { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-bottom: 44px; }
+  .mono-lab {
+    font-family: var(--mono); font-size: 11px; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--faint); font-weight: 500;
   }
-  .hero-cta { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; margin-bottom: 52px; }
-  .hero-code {
-    max-width: 700px; margin: 0 auto; text-align: left;
-    background: var(--bg-deep); border: 1px solid var(--border);
-    border-radius: 14px; padding: 22px 26px; font-family: var(--mono);
-    font-size: 13.5px; line-height: 1.7; color: var(--text-2); overflow: auto;
-  }
-  .hero-code b { color: var(--text); font-weight: 500; }
-  .hero-code .c { color: var(--green); }
-  .hero-code .cm { color: #7f7f7f; }
 
-  /* ————— sections ————— */
-  section { padding: 84px 0; border-top: 1px solid var(--border-subtle); }
-  .sec-head { max-width: 640px; margin-bottom: 48px; }
-  .sec-head h2 { font-size: clamp(28px, 4vw, 38px); font-weight: 400; line-height: 1.15; margin: 0 0 14px; letter-spacing: -0.01em; text-wrap: balance; }
-  .sec-head p { color: var(--text-2); margin: 0; text-wrap: pretty; }
-
-  .grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
-  .card {
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: 16px; padding: 26px;
+  /* code window */
+  .codewin {
+    max-width: 720px; margin: 0 auto; text-align: left;
+    background: rgba(15, 16, 17, 0.85); backdrop-filter: blur(10px);
+    border: 1px solid var(--border-hi); border-radius: 12px; overflow: hidden;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255,255,255,0.05);
   }
-  .card:hover { border-color: var(--border-prom); }
-  .card h3 { font-size: 20px; font-weight: 400; letter-spacing: -0.01em; margin: 0 0 10px; }
-  .card p { color: var(--text-muted); font-size: 14px; line-height: 1.55; margin: 0; }
-  .card .mono-lab { font-family: var(--mono); font-size: 12px; color: var(--green); display: block; margin-bottom: 2px; }
+  .codewin-head { display: flex; align-items: center; gap: 8px; padding: 10px 14px; border-bottom: 1px solid var(--border); border-radius: 12px 12px 0 0; background: rgba(255,255,255,0.02); }
+  .cw-dot { width: 11px; height: 11px; border-radius: 50%; }
+  .cw-dot.r { background: #ff5f57; } .cw-dot.y { background: #febc2e; } .cw-dot.g { background: #28c840; }
+  .cw-title { margin-left: 10px; font-family: var(--mono); font-size: 11px; color: var(--faint); }
+  .cw-body { padding: 20px 22px; font-family: var(--mono); font-size: 12.5px; line-height: 1.8; color: var(--text-2); overflow-x: auto; }
+  .cw-body .cm { color: var(--faint); }
+  .cw-body .cc { color: var(--blue); }
+  .cw-body .cs { color: var(--green); }
+  .cw-body .cr { color: var(--red); }
+  .cw-body b { color: var(--text); font-weight: 500; }
+  .cw-copy {
+    float: right; margin: 12px 14px 0 0; position: relative; z-index: 2;
+    font-family: var(--mono); font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase;
+    background: var(--panel-2); color: var(--muted); border: 1px solid var(--border);
+    border-radius: 6px; padding: 4px 10px; cursor: pointer;
+  }
+  .cw-copy:hover { color: var(--text); border-color: var(--border-hi); }
 
-  /* ————— code — pipeline — */
-  .pipeline { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: center; }
-  .steps { counter-reset: step; }
-  .step { display: flex; gap: 18px; padding: 16px 0; border-bottom: 1px solid var(--border-subtle); counter-increment: step; }
+  /* sections */
+  section { padding: 84px 0; border-top: 1px solid var(--border); position: relative; z-index: 2; }
+  .sec-head { max-width: 640px; margin-bottom: 42px; }
+  .sec-head h2 { font-size: clamp(27px, 3.6vw, 36px); font-weight: 600; letter-spacing: -0.03em; line-height: 1.12; margin: 0 0 14px; }
+  .sec-head p { color: var(--muted); margin: 0; }
+
+  /* bento grid — asymmetric */
+  .bento { display: grid; grid-template-columns: 1.35fr 1fr 1fr; grid-auto-rows: minmax(150px, auto); gap: 14px; }
+  .bt {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 12px;
+    padding: 22px 24px; display: flex; flex-direction: column; gap: 10px;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);
+  }
+  .bt:hover { border-color: var(--border-hi); background: var(--panel-hi); }
+  .bt.wide { grid-column: span 2; }
+  .bt .mono-lab { font-size: 11px; }
+  .bt h3 { font-size: 18px; font-weight: 600; letter-spacing: -0.02em; margin: 0; }
+  .bt p { color: var(--muted); font-size: 13.5px; line-height: 1.55; margin: 0; }
+  .bt .wire { margin-top: auto; display: flex; justify-content: center; padding-top: 8px; }
+  .bt .metric-line { display: flex; align-items: baseline; gap: 6px; font-family: var(--mono); }
+  .bt .metric-line .big { font-size: 26px; font-weight: 600; color: var(--text); letter-spacing: -0.03em; }
+
+  /* pipeline */
+  .pipeline { display: grid; grid-template-columns: 1fr 1fr; gap: 44px; align-items: center; }
+  .steps { padding: 0; }
+  .step { display: flex; gap: 18px; padding: 16px 0; border-bottom: 1px solid var(--border); }
   .step:last-child { border-bottom: none; }
   .step .n {
-    flex: none; width: 30px; height: 30px; border-radius: 9999px;
-    border: 1px solid var(--green-border); color: var(--green);
-    font-family: var(--mono); font-size: 13px;
+    flex: none; width: 28px; height: 28px; border-radius: 7px;
+    border: 1px solid var(--border-hi); color: var(--green);
+    font-family: var(--mono); font-size: 12px; font-weight: 500;
     display: flex; align-items: center; justify-content: center;
+    background: var(--panel-2);
   }
-  .step h3 { font-size: 16px; font-weight: 500; margin: 0 0 5px; }
-  .step p { color: var(--text-muted); font-size: 14px; margin: 0; line-height: 1.55; }
-
-  pre.code {
-    background: var(--bg-deep); border: 1px solid var(--border);
-    border-radius: 14px; padding: 24px 26px; margin: 0;
-    font-family: var(--mono); font-size: 13px; line-height: 1.75;
+  .step h3 { font-size: 15px; font-weight: 600; margin: 0 0 5px; letter-spacing: -0.01em; }
+  .step p { color: var(--muted); font-size: 13.5px; margin: 0; line-height: 1.55; }
+  pre.raw {
+    background: rgba(15, 16, 17, 0.85); border: 1px solid var(--border-hi); border-radius: 12px;
+    padding: 20px 22px; margin: 0; font-family: var(--mono); font-size: 12.5px; line-height: 1.75;
     color: var(--text-2); overflow: auto;
   }
-  pre.code b { color: var(--text); font-weight: 500; }
-  pre.code .c { color: var(--green); }
-  pre.code .cm { color: #7f7f7f; }
+  pre.raw .cs { color: var(--green); } pre.raw .cm { color: var(--faint); } pre.raw b { color: var(--text); font-weight: 500; }
+  .gap-18 { height: 18px; }
 
-  /* ————— models strip ————— */
+  /* chips */
   .strip { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
   .chip {
-    border: 1px solid var(--border); background: var(--bg-deep);
-    border-radius: 9999px; padding: 7px 18px; font-family: var(--mono);
+    border: 1px solid var(--border); background: var(--panel);
+    border-radius: 999px; padding: 7px 16px; font-family: var(--mono);
     font-size: 12px; color: var(--text-2);
   }
   .chip b { color: var(--green); font-weight: 500; margin-right: 8px; }
 
-  /* ————— cta band ————— */
-  .cta { text-align: center; border-top: 1px solid var(--border-subtle); padding: 96px 0; }
-  .cta h2 { font-size: clamp(28px, 4vw, 40px); font-weight: 400; line-height: 1.1; margin: 0 0 16px; letter-spacing: -0.01em; }
-  .cta p { color: var(--text-2); margin: 0 0 34px; }
+  /* cta */
+  .cta { text-align: center; border-top: 1px solid var(--border); padding: 92px 0; position: relative; z-index: 2; }
+  .cta h2 { font-size: clamp(28px, 4vw, 40px); font-weight: 600; letter-spacing: -0.03em; line-height: 1.1; margin: 0 0 16px; }
+  .cta p { color: var(--muted); margin: 0 0 32px; }
 
-  footer { border-top: 1px solid var(--border-subtle); padding: 40px 0 52px; color: var(--text-muted); font-size: 13px; }
+  footer { border-top: 1px solid var(--border); padding: 36px 0 48px; color: var(--faint); font-size: 12.5px; }
   footer .wrap { display: flex; justify-content: space-between; gap: 18px; flex-wrap: wrap; }
-  footer a { color: var(--text-muted); text-decoration: none; }
+  footer a { color: var(--faint); text-decoration: none; }
   footer a:hover { color: var(--text); }
-  footer .m { font-family: var(--mono); font-size: 12px; }
+  footer .m { font-family: var(--mono); font-size: 11.5px; }
 
   @media (max-width: 880px) {
-    .grid3 { grid-template-columns: 1fr; }
-    .pipeline { grid-template-columns: 1fr; gap: 34px; }
+    .bento { grid-template-columns: 1fr; }
+    .bt.wide { grid-column: span 1; }
+    .pipeline { grid-template-columns: 1fr; gap: 30px; }
     .nav-links { display: none; }
-    .hero { padding: 74px 0 56px; }
-    section { padding: 60px 0; }
+    .hero { padding: 70px 0 52px; }
+    section { padding: 58px 0; }
   }
 </style>
 </head>
@@ -166,24 +195,32 @@
       <a href="#api">API</a>
       <a href="https://github.com/Bohsauro/pennyroute" target="_blank" rel="noopener">GitHub ↗</a>
     </div>
-    <a class="btn-pill" href="https://github.com/Bohsauro/pennyroute">Open dashboard</a>
+    <a class="btn accent" href="https://github.com/Bohsauro/pennyroute">Open dashboard</a>
   </div>
 </nav>
 
 <header class="hero" id="top">
   <div class="wrap">
-    <h1>Always the cheapest<br>healthy model.</h1>
+    <h1>Always the cheapest healthy model.</h1>
     <p class="hero-sub">PennyRoute ranks every provider of your models by real blended cost, then routes every request through the cheapest one that is actually fast and up. With automatic fallback chains.</p>
     <div class="hero-cta">
-      <a class="btn-pill" href="https://github.com/Bohsauro/pennyroute">Open dashboard</a>
-      <a class="btn-pill ghost" href="https://github.com/Bohsauro/pennyroute" target="_blank" rel="noopener">View on GitHub</a>
+      <a class="btn accent" href="https://github.com/Bohsauro/pennyroute">Open dashboard</a>
+      <a class="btn ghost" href="https://github.com/Bohsauro/pennyroute" target="_blank" rel="noopener">View on GitHub</a>
     </div>
-    <div class="hero-code">
-      <span class="cm"># one endpoint, always the cheapest healthy provider</span><br>
-      <b>curl</b> http://<span class="c">your-host</span>:8490/v1/chat/completions \<br>
-      &nbsp;&nbsp;-H <span class="c">"X-API-Key: pnk-…"</span> \<br>
-      &nbsp;&nbsp;-d <span class="c">'{"model": "penny", "messages": [{"role": "user", "content": "hi"}]}'</span><br>
-      <span class="cm">→ served by deepseek/deepseek-v4-flash-0731 @ Baidu — $0.0009/M blended</span>
+    <div class="codewin">
+      <button class="cw-copy" id="copybtn">Copy</button>
+      <div class="codewin-head">
+        <span class="cw-dot r"></span><span class="cw-dot y"></span><span class="cw-dot g"></span>
+        <span class="cw-title">pennyroute — /v1/chat/completions</span>
+      </div>
+      <div class="cw-body" id="curlex">
+<span class="cm"># one endpoint, always the cheapest healthy provider</span><br>
+<b>curl</b> <span class="cc">http://your-host:8490</span><b>/v1/chat/completions</b> \<br>
+&nbsp;&nbsp;-H <span class="cs">"X-API-Key: pnk-…"</span> \<br>
+&nbsp;&nbsp;-d <span class="cs">'{"model": "penny",</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="cs">"messages": [{"role": "user", "content": "hi"}]}'</span><br>
+<span class="cm">→ served by deepseek/deepseek-v4-flash-0731 @ Baidu — $0.0009/M blended</span>
+      </div>
     </div>
   </div>
 </header>
@@ -192,23 +229,47 @@
   <div class="wrap">
     <div class="sec-head">
       <h2>Same model, wildly different prices.</h2>
-      <p>The identical model id is hosted by dozens of providers, with up to a 100x spread on the same workload. And for agent traffic, most tokens are cache-reads, so list prices are misleading: only <em>blended cost under your real token mix</em> tells the truth.</p>
+      <p>The identical model id is hosted by dozens of providers, with up to a 100x spread on the same workload. And for agent traffic, most tokens are cache-reads, so list prices are misleading: only <em style="color:var(--text);font-style:normal">blended cost under your real token mix</em> tells the truth.</p>
     </div>
-    <div class="grid3">
-      <div class="card">
-        <span class="mono-lab">Blended $/M</span>
+    <div class="bento">
+      <div class="bt wide">
+        <div class="mono-lab">Blended $/M</div>
         <h3>Pricing that matches your usage</h3>
-        <p>Every model × provider endpoint is priced as input + cache + output weighted by your actual token mix (default measured: 14 / 85 / 1). A provider that's cheap on input but burns your cache bill can never win.</p>
+        <p>Every model × provider endpoint is priced as input + cache + output, weighted by your actual token mix. A provider that's cheap on input but burns your cache bill can never win.</p>
+        <div class="wire" style="justify-content:flex-start;gap:26px">
+          <div class="metric-line"><span class="big" style="color:var(--green)">$0.0009</span><span class="mono-lab" style="font-size:11px">blended /M</span></div>
+          <div class="metric-line"><span class="big">100×</span><span class="mono-lab" style="font-size:11px">provider spread</span></div>
+          <div class="metric-line"><span class="big">85%</span><span class="mono-lab" style="font-size:11px">cache-share</span></div>
+        </div>
       </div>
-      <div class="card">
-        <span class="mono-lab">Health gates</span>
+      <div class="bt">
+        <div class="mono-lab">Health gates</div>
         <h3>Cheap, but alive</h3>
         <p>Throughput p50 ≥ 45 tps and uptime ≥ 99% are hard requirements. The cheapest endpoint nobody can actually call is worthless; PennyRoute never picks it.</p>
+        <div class="wire">
+          <svg width="160" height="52" viewBox="0 0 160 52" fill="none">
+            <path d="M4 44 C 30 44, 26 14, 52 14 S 74 38, 100 38 S 122 8, 148 8" stroke="var(--green)" stroke-width="1.6" opacity="0.85"/>
+            <path d="M4 44 C 40 44, 44 26, 70 26 S 96 44, 130 44" stroke="#2a2d33" stroke-width="1.6"/>
+            <circle cx="148" cy="8" r="3" fill="var(--green)"/>
+            <circle cx="130" cy="44" r="3" fill="#2a2d33"/>
+          </svg>
+        </div>
       </div>
-      <div class="card">
-        <span class="mono-lab">Fallback chains</span>
-        <h3>Free first, then the cheapest paid</h3>
-        <p>Ordered pipelines like <span style="font-family:var(--mono);font-size:12.5px;color:var(--green-link)">free :free → cheapest paid</span>. The engine walks top → bottom and uses the first healthy step. Per-request failover retries the next candidate on error.</p>
+      <div class="bt">
+        <div class="mono-lab">Fallback chains</div>
+        <h3>Free first, then cheapest paid</h3>
+        <p>Ordered pipelines like <span style="font-family:var(--mono);font-size:12px;color:var(--green)">free :free → cheapest</span>. The engine walks top → bottom and uses the first healthy step. Per-request failover retries the next candidate on error.</p>
+        <div class="wire">
+          <svg width="160" height="40" viewBox="0 0 160 40" fill="none">
+            <rect x="2" y="10" width="44" height="20" rx="6" stroke="var(--faint)" stroke-width="1.2"/>
+            <rect x="58" y="10" width="44" height="20" rx="6" stroke="var(--amber)" stroke-width="1.2"/>
+            <rect x="114" y="10" width="44" height="20" rx="6" stroke="var(--green)" stroke-width="1.2"/>
+            <path d="M48 20h8M104 20h8" stroke="#2a2d33" stroke-width="1.4"/>
+            <text x="24" y="23" font-family="var(--mono)" font-size="8" fill="var(--faint)" text-anchor="middle">FREE</text>
+            <text x="80" y="23" font-family="var(--mono)" font-size="8" fill="var(--amber)" text-anchor="middle">PAID</text>
+            <text x="136" y="23" font-family="var(--mono)" font-size="8" fill="var(--green)" text-anchor="middle">BEST</text>
+          </svg>
+        </div>
       </div>
     </div>
   </div>
@@ -227,9 +288,9 @@
         <div class="step"><div class="n">3</div><div><h3>Route, and fail over</h3><p>Requests hit one OpenAI-compatible endpoint. The primary chain picks the cheapest healthy provider; on error the next candidate serves.</p></div></div>
       </div>
       <div>
-        <pre class="code"><span class="cm"># data/chain.json — ordered pipeline</span><br>{<br>&nbsp;&nbsp;<span class="c">"name"</span>: "main",<br>&nbsp;&nbsp;<span class="c">"primary"</span>: true,<br>&nbsp;&nbsp;<span class="c">"entries"</span>: [<br>&nbsp;&nbsp;&nbsp;&nbsp;{ <span class="c">"type"</span>: "cheapest", <span class="c">"filter"</span>: ":free" }<br>&nbsp;&nbsp;&nbsp;&nbsp;{ <span class="c">"type"</span>: "cheapest" }<br>&nbsp;&nbsp;]<br>}</pre>
-        <div style="height:18px"></div>
-        <pre class="code"><span class="cm"># python — any OpenAI-compatible client</span><br><b>from</b> openai <b>import</b> OpenAI<br><br>client = OpenAI(<br>&nbsp;&nbsp;base_url=<span class="c">"http://your-host:8490/v1"</span>,<br>&nbsp;&nbsp;api_key=<span class="c">"pnk-…"</span>)<br>r = client.chat.completions.create(<br>&nbsp;&nbsp;model=<span class="c">"penny"</span>,<br>&nbsp;&nbsp;messages=[{<span class="c">"role"</span>: <span class="c">"user"</span>, <span class="c">"content"</span>: <span class="c">"hello"</span>}])<br>print(r.model) <span class="cm"># who actually served you</span></pre>
+        <pre class="raw"><span class="cm"># data/chains.json — ordered pipeline</span><br>{<br>&nbsp;&nbsp;<span class="cs">"name"</span>: "main",<br>&nbsp;&nbsp;<span class="cs">"primary"</span>: true,<br>&nbsp;&nbsp;<span class="cs">"entries"</span>: [<br>&nbsp;&nbsp;&nbsp;&nbsp;{ <span class="cs">"type"</span>: "cheapest", <span class="cs">"filter"</span>: ":free" }<br>&nbsp;&nbsp;&nbsp;&nbsp;{ <span class="cs">"type"</span>: "cheapest" }<br>&nbsp;&nbsp;]<br>}</pre>
+        <div class="gap-18"></div>
+        <pre class="raw"><span class="cm"># python — any OpenAI-compatible client</span><br><b>from</b> openai <b>import</b> OpenAI<br><br>client = OpenAI(<br>&nbsp;&nbsp;base_url=<span class="cs">"http://your-host:8490/v1"</span>,<br>&nbsp;&nbsp;api_key=<span class="cs">"pnk-…"</span>)<br>r = client.chat.completions.create(<br>&nbsp;&nbsp;model=<span class="cs">"penny"</span>,<br>&nbsp;&nbsp;messages=[{<span class="cs">"role"</span>: <span class="cs">"user"</span>, <span class="cs">"content"</span>: <span class="cs">"hello"</span>}])<br>print(r.model) <span class="cm"># who actually served you</span></pre>
       </div>
     </div>
   </div>
@@ -239,7 +300,7 @@
   <div class="wrap" style="text-align:center">
     <div class="sec-head" style="margin-left:auto;margin-right:auto">
       <h2>Point anything at PennyRoute.</h2>
-      <p>OpenAI-compatible <span class="m" style="font-family:var(--mono);color:var(--green-link)">/v1/chat/completions</span> with its own API keys. Claude Code, Cursor, LangChain, Aider — whatever speaks OpenAI can ride your cheapest healthy provider. Streaming included.</p>
+      <p>OpenAI-compatible <span style="font-family:var(--mono);color:var(--green)">/v1/chat/completions</span> with its own API keys. Claude Code, Cursor, LangChain, Aider — whatever speaks OpenAI can ride your cheapest healthy provider. Streaming included.</p>
     </div>
     <div class="strip">
       <span class="chip"><b>Claude Code</b>ANTHROPIC_BASE_URL</span>
@@ -256,8 +317,8 @@
     <h2>Run it on your own box.<br><span style="color:var(--green)">Keep every cent you save.</span></h2>
     <p>One command to install. State is plain JSON in <span style="font-family:var(--mono);font-size:13px">data/</span>. No cloud, no lock-in.</p>
     <div class="hero-cta">
-      <a class="btn-pill" href="https://github.com/Bohsauro/pennyroute">Open dashboard</a>
-      <a class="btn-pill ghost" href="https://github.com/Bohsauro/pennyroute" target="_blank" rel="noopener">★ Star on GitHub</a>
+      <a class="btn accent" href="https://github.com/Bohsauro/pennyroute">Open dashboard</a>
+      <a class="btn ghost" href="https://github.com/Bohsauro/pennyroute" target="_blank" rel="noopener">★ Star on GitHub</a>
     </div>
   </div>
 </div>
@@ -266,9 +327,19 @@
   <div class="wrap">
     <div>PennyRoute — the frugal AI router. MIT licensed.</div>
     <div><a href="https://github.com/Bohsauro/pennyroute" target="_blank" rel="noopener">github.com/Bohsauro/pennyroute</a></div>
-    <div class="m">v1.2.0</div>
+    <div class="m">v1.4.0</div>
   </div>
 </footer>
 
+<script>
+document.getElementById("copybtn").onclick = function () {
+  var t = "curl http://YOUR-IP:8490/v1/chat/completions \\\n  -H \"Content-Type: application/json\" \\\n  -H \"X-API-Key: pnk-YOUR-KEY\" \\\n  -d '{\"model\": \"penny\", \"messages\": [{\"role\": \"user\", \"content\": \"hi\"}]}'";
+  navigator.clipboard.writeText(t).then(function () {
+    var b = document.getElementById("copybtn");
+    b.textContent = "Copied ✓";
+    setTimeout(function () { b.textContent = "Copy"; }, 1600);
+  });
+};
+</script>
 </body>
 </html>

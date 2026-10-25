@@ -86,24 +86,33 @@ function viewOverview() {
         (i < primary.entries.length - 1 ? '<span class="chain-arrow">→</span>' : "");
     }).join("") + "</div>";
   }
+  const top5 = RANKED.slice(0, 5).map((m, i) => {
+    const b = m.best; if (!b) return "";
+    const dotCls = b.healthy ? "ok" : (b.tps ? "warn" : "bad");
+    const barW = Math.min(100, Math.round((b.tps || 0) / 200 * 100));
+    const barCls = b.tps >= 100 ? "ok" : b.tps >= 45 ? "warn" : "bad";
+    const barColor = barCls === "ok" ? "var(--green-soft)" : barCls === "warn" ? "var(--amber)" : "var(--red)";
+    return `<tr><td class="faint">${i + 1}</td>
+      <td><span class="model-name">${esc(m.slug)}</span></td>
+      <td><span class="prov"><span class="dot ${dotCls}"></span>${esc(b.provider)}</span></td>
+      <td class="num"><span class="pnum">${fmt(b.blended)}</span></td>
+      <td class="num"><span class="tps">${b.tps ? b.tps.toFixed(0) : "n/a"}<span class="tbar"><span style="width:${barW}%;background:${barColor}"></span></span></span></td></tr>`;
+  }).join("");
   $("#view").innerHTML = `
     <div class="page-head">
       <div><h1>Overview</h1><div class="sub">What is running right now, and what will run if this one fails.</div></div>
       <button class="primary" id="btn-evaluate">Evaluate now</button>
     </div>
-    <div class="grid3">
-      <div class="stat"><div class="label">Active model</div><div class="value" style="font-size:14px;font-family:var(--mono)">${esc(a.model || "—")}</div><div class="sub">@ ${esc(order)}</div></div>
-      <div class="stat"><div class="label">Primary chain</div><div class="value" style="font-size:14px">${esc(STATE.primary_chain || "—")}</div><div class="sub">${primary ? primary.entries.length + " fallback step(s)" : "configure one in Chains"}</div></div>
-      <div class="stat"><div class="label">Watchlist</div><div class="value">${MODELS.length}</div><div class="sub">models ranked every ${STATE.settings.interval_min} min</div></div>
+    <div class="metrics">
+      <div class="metric"><div class="label">Active model</div><div class="value">${esc(a.model || "—")}</div><div class="sub">@ ${esc(order)}</div></div>
+      <div class="metric"><div class="label">Primary chain</div><div class="value">${esc(STATE.primary_chain || "—")}</div><div class="sub">${primary ? primary.entries.length + " fallback step(s)" : "configure one in Chains"}</div></div>
+      <div class="metric"><div class="label">Watchlist</div><div class="value">${MODELS.length}</div><div class="sub">ranked every ${STATE.settings.interval_min} min</div></div>
     </div>
-    <div class="card"><h2>Fallback pipeline — ${esc(STATE.primary_chain || "none")}</h2>${chainHtml}
-      <div class="hint">The engine walks this chain top → bottom. First healthy step wins; switches are applied to <span class="mono">~/.hermes/config.yaml</span> automatically.</div></div>
-    <div class="card"><h2>Top 5 cheapest (blended, your mix)</h2>
-      <table><thead><tr><th>#</th><th>Model</th><th>Provider</th><th class="num">Blended $/M</th><th class="num">tps</th></tr></thead>
-      <tbody>${RANKED.slice(0, 5).map((m, i) => {
-        const b = m.best; if (!b) return "";
-        return `<tr><td>${i + 1}</td><td><span class="model-name mono">${esc(m.slug)}</span></td><td>${esc(b.provider)}</td><td class="num">${fmt(b.blended)}</td><td class="num">${b.tps ? b.tps.toFixed(0) : "n/a"}</td></tr>`;
-      }).join("")}</tbody></table></div>`;
+    <div class="panel"><h2><span class="k">Fallback pipeline</span> — ${esc(STATE.primary_chain || "none")}</h2>${chainHtml}
+      <div class="hint">The engine walks this chain top → bottom. First healthy step wins; switches are applied to <span style="font-family:var(--mono)">~/.hermes/config.yaml</span> automatically.</div></div>
+    <div class="panel"><h2><span class="k">Top 5 cheapest</span> — blended, your mix</h2>
+      <table><thead><tr><th class="num">#</th><th>Model</th><th>Provider</th><th class="num">Blended $/M</th><th class="num">tps</th></tr></thead>
+      <tbody>${top5}</tbody></table></div>`;
   $("#btn-evaluate").onclick = async () => {
     toast("Evaluating chain…");
     try { const r = await api("/api/evaluate", { method: "POST" });
@@ -126,14 +135,14 @@ function viewRanking() {
   $("#view").innerHTML = `
     <div class="page-head">
       <div><h1>Ranking</h1><div class="sub">Blended $/M per 1M total tokens under your real token mix. Health gate: tps ≥ ${STATE.settings.min_tps}, uptime ≥ ${STATE.settings.min_uptime}%.</div></div>
-      <div><button id="btn-refresh">↻ Refresh</button></div>
+      <div><button class="ghost" id="btn-refresh">↻ Refresh</button></div>
     </div>
-    <div class="card"><h2>Token mix</h2>${mixControls("mix")}</div>
-    <div class="card"><table><thead><tr>
-      <th>#</th><th>Model</th><th>Best provider</th><th class="num">in</th><th class="num">cache</th><th class="num">out</th><th class="num">Blended $/M</th><th class="num">tps</th><th class="num">uptime</th><th></th>
+    <div class="panel"><h2><span class="k">Token mix</span></h2><div style="max-width:560px">${mixControls("mix")}</div></div>
+    <div class="panel"><table><thead><tr>
+      <th class="num">#</th><th>Model</th><th>Best provider</th><th class="num">in</th><th class="num">cache</th><th class="num">out</th><th class="num">Blended $/M</th><th class="num">tps</th><th class="num">uptime</th><th class="num">providers</th><th></th>
     </tr></thead><tbody id="rank-rows"></tbody></table></div>
-    <div class="card" id="detail-card" style="display:none"><h2>Providers — <span class="mono" id="detail-slug"></span></h2>
-      <table><thead><tr><th>#</th><th>Provider</th><th class="num">in</th><th class="num">cache</th><th class="num">out</th><th class="num">Blended</th><th class="num">discount</th><th class="num">tps</th><th class="num">uptime</th><th></th><th></th></tr></thead>
+    <div class="panel" id="detail-card" style="display:none"><h2><span class="k">Providers</span> — <span style="font-family:var(--mono)">${"<span id='detail-slug'></span>"}</span></h2>
+      <table><thead><tr><th class="num">#</th><th>Provider</th><th class="num">in</th><th class="num">cache</th><th class="num">out</th><th class="num">Blended</th><th class="num">discount</th><th class="num">tps</th><th class="num">uptime</th><th></th><th></th></tr></thead>
       <tbody id="ep-rows"></tbody></table></div>`;
   renderRankRows();
   $("#btn-refresh").onclick = async () => {
@@ -155,19 +164,23 @@ function renderRankRows() {
   const cur = STATE.active.model;
   $("#rank-rows").innerHTML = RANKED.map((m, i) => {
     const b = m.best;
-    if (m.error) return `<tr><td>${i + 1}</td><td colspan="9" style="color:var(--red)">${esc(m.slug)}: ${esc(m.error)}</td></tr>`;
-    if (!b) return `<tr><td>${i + 1}</td><td><span class="model-name mono">${esc(m.slug)}</span></td><td colspan="8" class="faint">no endpoints</td></tr>`;
+    if (m.error) return `<tr><td class="num">${i + 1}</td><td colspan="10" style="color:var(--red)">${esc(m.slug)}: ${esc(m.error)}</td></tr>`;
+    if (!b) return `<tr><td class="num">${i + 1}</td><td><span class="model-name">${esc(m.slug)}</span></td><td colspan="9" class="faint">no endpoints</td></tr>`;
     const hc = m.healthy_count, pc = m.provider_count;
     const cls = hc === pc ? "ok" : hc > 0 ? "warn" : "bad";
+    const barW = Math.min(100, Math.round((b.tps || 0) / 200 * 100));
+    const barCls = b.tps >= 100 ? "ok" : b.tps >= 45 ? "warn" : "bad";
+    const barColor = barCls === "ok" ? "var(--green-soft)" : barCls === "warn" ? "var(--amber)" : "var(--red)";
     return `<tr class="${m.slug === cur ? "active-row" : ""}">
-      <td>${i + 1}</td>
-      <td><div class="model-name mono">${esc(m.slug)}</div><div class="model-sub">${esc(m.note || "")}</div></td>
-      <td>${esc(b.provider)}${b.cache_est ? ' <span class="mini">≈</span>' : ""}</td>
+      <td class="num faint">${i + 1}</td>
+      <td><div class="model-name">${esc(m.slug)}</div><div class="model-sub">${esc(m.note || "")}</div></td>
+      <td><span class="prov"><span class="dot ${b.healthy ? "ok" : "bad"}"></span>${esc(b.provider)}${b.cache_est ? ' <span class="mini">≈</span>' : ""}</span></td>
       <td class="num">${fmt(b.in)}</td><td class="num">${fmt(b.cache)}</td><td class="num">${fmt(b.out)}</td>
-      <td class="num"><b>${fmt(b.blended)}</b></td>
-      <td class="num">${b.tps ? b.tps.toFixed(0) : "n/a"}</td>
+      <td class="num"><span class="pnum">${fmt(b.blended)}</span></td>
+      <td class="num"><span class="tps">${b.tps ? b.tps.toFixed(0) : "n/a"}<span class="tbar"><span style="width:${barW}%;background:${barColor}"></span></span></span></td>
       <td class="num">${b.uptime ? b.uptime.toFixed(1) + "%" : "n/a"}</td>
-      <td><span class="badge ${cls}">${hc}/${pc}</span> <button class="sm" data-slug="${esc(m.slug)}">providers</button></td>
+      <td class="num"><span class="badge ${cls}">${hc}/${pc}</span></td>
+      <td><button class="sm ghost" data-slug="${esc(m.slug)}">providers</button></td>
     </tr>`;
   }).join("");
   $$("#rank-rows button[data-slug]").forEach(b => b.onclick = () => loadDetail(b.dataset.slug));
@@ -181,12 +194,16 @@ async function loadDetail(slug) {
     const d = await api("/api/endpoints/" + encodeURIComponent(slug));
     $("#ep-rows").innerHTML = d.endpoints.map((e, i) => {
       if (e.error) return `<tr><td colspan="11" style="color:var(--red)">${esc(e.error)}</td></tr>`;
+      const barW = Math.min(100, Math.round((e.tps || 0) / 200 * 100));
+      const barCls = e.tps >= 100 ? "ok" : e.tps >= 45 ? "warn" : "bad";
+      const barColor = barCls === "ok" ? "var(--green-soft)" : barCls === "warn" ? "var(--amber)" : "var(--red)";
       return `<tr>
-        <td>${i + 1}</td><td><b>${esc(e.provider)}</b></td>
+        <td class="num faint">${i + 1}</td>
+        <td><span class="prov"><span class="dot ${e.healthy ? "ok" : "bad"}"></span><b>${esc(e.provider)}</b></span></td>
         <td class="num">${fmt(e.in)}</td><td class="num">${fmt(e.cache)}${e.cache_est ? ' <span class="mini">≈</span>' : ""}</td>
-        <td class="num">${fmt(e.out)}</td><td class="num"><b>${fmt(e.blended)}</b></td>
+        <td class="num">${fmt(e.out)}</td><td class="num"><span class="pnum">${fmt(e.blended)}</span></td>
         <td class="num">${e.discount ? (e.discount * 100).toFixed(0) + "%" : "—"}</td>
-        <td class="num">${e.tps ? e.tps.toFixed(0) : "n/a"}</td>
+        <td class="num"><span class="tps">${e.tps ? e.tps.toFixed(0) : "n/a"}<span class="tbar"><span style="width:${barW}%;background:${barColor}"></span></span></span></td>
         <td class="num">${e.uptime ? e.uptime.toFixed(1) + "%" : "n/a"}</td>
         <td><span class="badge ${e.healthy ? "ok" : "bad"}">${e.healthy ? "healthy" : "off"}</span></td>
         <td><button class="sm primary" data-m="${esc(slug)}" data-p="${esc(e.provider)}">use</button></td></tr>`;
@@ -227,7 +244,7 @@ function viewChains() {
 
 function renderChains() {
   $("#chains-list").innerHTML = CHAINS.map((c, ci) => `
-    <div class="card">
+    <div class="panel">
       <h2>${esc(c.name)} ${c.primary ? '<span class="badge ok">PRIMARY</span>' : ""} ${c.auto_apply ? '<span class="badge info">auto-apply</span>' : '<span class="badge warn">manual</span>'}</h2>
       <div class="chain-flow">${c.entries.length ? c.entries.map((e, i) => {
         const m = e.type === "cheapest" ? "cheapest in watchlist" : esc(e.model);
@@ -351,7 +368,7 @@ async function viewApi() {
   $("#view").innerHTML = `
     <div class="page-head"><div><h1>API endpoint</h1>
       <div class="sub">OpenAI-compatible. Point any client (openai SDK, LangChain, curl) at PennyRoute and it routes through your chains.</div></div></div>
-    <div class="card"><h2>Base URL</h2>
+    <div class="panel"><h2>Base URL</h2>
       <div class="row-ctl">
         <div><label class="field">On this machine</label><input readonly value="http://localhost:8490/v1" id="url-local"></div>
         <div><label class="field">From LAN / Tailscale</label><input readonly value="http://YOUR-IP:8490/v1" id="url-lan"></div>
@@ -359,8 +376,8 @@ async function viewApi() {
       </div>
       <div class="hint" style="margin-top:8px">Reachable on all interfaces (0.0.0.0). From another device use the Tailscale IP or LAN IP of this machine — same port.</div>
     </div>
-    <div class="card"><h2>Routing now</h2><div id="resolve-box"><span class="spinner"></span></div></div>
-    <div class="card"><h2>API keys</h2>
+    <div class="panel"><h2>Routing now</h2><div id="resolve-box"><span class="spinner"></span></div></div>
+    <div class="panel"><h2>API keys</h2>
       <div class="row-ctl" style="max-width:520px">
         <div><label class="field">Key name</label><input id="key-name" placeholder="e.g. my-laptop"></div>
         <div style="max-width:130px;align-self:end"><button class="primary" id="btn-newkey">Create key</button></div>
@@ -372,7 +389,7 @@ async function viewApi() {
       </div>
       <div id="keys-list" style="margin-top:14px"></div>
     </div>
-    <div class="card"><h2>Usage</h2>
+    <div class="panel"><h2>Usage</h2>
       <div class="hint" style="margin-bottom:8px">model field: <span class="mono">"penny"</span> = primary chain · <span class="mono">"penny:free-first"</span> = a named chain · any real model id = that model, routed to its cheapest healthy provider.</div>
       <label class="field">curl</label>
       <pre class="mono" id="ex-curl" style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:12px;font-size:12px;overflow:auto"></pre>
@@ -445,7 +462,7 @@ function viewChat() {
   $("#view").innerHTML = `
     <div class="page-head"><div><h1>Chat</h1>
       <div class="sub">Talk to the router from any device on Tailscale / LAN. Key stays in this browser (localStorage), never on the server.</div></div></div>
-    <div class="card" style="padding:14px 18px">
+    <div class="panel" style="padding:14px 18px">
       <div class="row-ctl">
         <div><label class="field">PennyRoute API key</label>
           <input type="password" id="chat-key" placeholder="pnk-…" value="${esc(savedKey)}" class="mono"></div>
@@ -460,14 +477,14 @@ function viewChat() {
       </div>
       <div class="hint" style="margin-top:6px">Create keys in <a href="#/api" style="color:var(--accent)">API endpoint</a>.</div>
     </div>
-    <div class="card" style="padding:0">
+    <div class="panel" style="padding:0">
       <div id="chat-log" style="padding:16px 18px;min-height:280px;max-height:60vh;overflow:auto"></div>
       <div style="border-top:1px solid var(--border);padding:12px 16px;display:flex;gap:10px">
         <input id="chat-input" placeholder="Scrivi un messaggio… (Enter per inviare)" autocomplete="off">
         <button class="primary" id="chat-send" style="flex:none">Send</button>
       </div>
     </div>
-    <div class="card" id="chat-meta" style="display:none"></div>`;
+    <div class="panel" id="chat-meta" style="display:none"></div>`;
 
   const log = $("#chat-log");
   const input = $("#chat-input");
@@ -549,12 +566,12 @@ function viewModels() {
     <div class="page-head">
       <div><h1>Watchlist</h1><div class="sub">Models ranked by the engine. Add any OpenRouter model — the ranking covers its providers.</div></div>
     </div>
-    <div class="card"><h2>Add model</h2>
+    <div class="panel"><h2>Add model</h2>
       <div class="autocomplete" style="max-width:520px">
         <input id="model-search" placeholder="Type to search 468+ models (e.g. kimi, glm, deepseek)…">
         <div class="ac-list" id="model-ac"></div>
       </div></div>
-    <div class="card"><h2>${MODELS.length} models</h2>
+    <div class="panel"><h2>${MODELS.length} models</h2>
       <table><thead><tr><th>Slug</th><th>Note</th><th></th></tr></thead>
       <tbody>${MODELS.map(m => `<tr><td class="mono">${esc(m.slug)}</td><td class="muted">${esc(m.note || "")}</td>
         <td><button class="sm danger" data-slug="${esc(m.slug)}">remove</button></td></tr>`).join("")}</tbody></table></div>`;
@@ -596,17 +613,17 @@ function viewSettings() {
   const s = STATE.settings;
   $("#view").innerHTML = `
     <div class="page-head"><div><h1>Settings</h1><div class="sub">Engine behaviour. Applied live — no restart needed.</div></div></div>
-    <div class="card"><h2>Cost model</h2>
+    <div class="panel"><h2>Cost model</h2>
       <div class="hint" style="margin-bottom:6px">Blended $/M = in_f · input + cache_f · cache + out_f · output. Defaults from your measured month: 14 / 85 / 1.</div>
       ${mixControls("s")}
     </div>
-    <div class="card"><h2>Health gates</h2>
+    <div class="panel"><h2>Health gates</h2>
       <div class="row-ctl">
         <div><label class="field">Min throughput (tps)</label><input type="number" id="s-tps" value="${s.min_tps}"></div>
         <div><label class="field">Min uptime (%)</label><input type="number" id="s-up" value="${s.min_uptime}" step="0.1"></div>
         <div><label class="field">Check interval (min)</label><input type="number" id="s-int" value="${s.interval_min}"></div>
       </div></div>
-    <div class="card"><h2>Applying</h2>
+    <div class="panel"><h2>Applying</h2>
       <label class="switch"><input type="checkbox" id="s-restart" ${s.gateway_restart ? "checked" : ""}> Restart gateway after switching (required for the new pin to take effect)</label>
       <div style="margin-top:14px"><button class="primary" id="btn-save">Save settings</button></div></div>`;
   ["in", "cache", "out"].forEach(k => $("#s-" + k).value = Math.round(STATE.settings.mix[k] * 100));
@@ -629,7 +646,7 @@ function viewSettings() {
 function viewEvents() {
   $("#view").innerHTML = `
     <div class="page-head"><div><h1>Events</h1><div class="sub">Engine decisions and switches.</div></div></div>
-    <div class="card"><div id="ev-list"><span class="spinner"></span></div></div>`;
+    <div class="panel"><div id="ev-list"><span class="spinner"></span></div></div>`;
   api("/api/events?limit=60").then(d => {
     $("#ev-list").innerHTML = d.events.length ? d.events.map(e => `
       <div class="ev-row"><span class="ts">${esc(e.ts)}</span>
@@ -663,7 +680,7 @@ window.addEventListener("load", async () => {
   try {
     await loadCommon();
   } catch (e) {
-    $("#view").innerHTML = `<div class="card"><h2>Backend offline</h2><div class="muted">${esc(e.message)}</div></div>`;
+    $("#view").innerHTML = `<div class="panel"><h2>Backend offline</h2><div class="muted">${esc(e.message)}</div></div>`;
   }
   setInterval(async () => {
     try { STATE = await api("/api/state"); } catch (e) {}
